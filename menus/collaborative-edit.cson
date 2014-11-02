@@ -1,0 +1,18 @@
+# See https://atom.io/docs/latest/creating-a-package#menus for more details
+'context-menu':
+  '.overlayer':
+      'Enable collaborative-edit': 'collaborative-edit:Host'
+
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'Collaberate'
+      'submenu': [
+        { 'label': 'Host', 'command': 'collaborative-edit:Host' }
+        { 'label': 'Connect', 'command': 'collaborative-edit:Connect'}
+        { 'label': 'Edit Host Configuration', 'command': 'collaborative-edit:EditHostConfig'}
+      ]
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "name": "collaborative-edit",
+  "main": "./lib/collaborative-edit",
+  "version": "0.0.0",
+  "description": "Allow for LAN collaborative editing of specified documents",
+  "activationEvents": ["collaborative-edit:Host",
+    "collaborative-edit:Connect",
+    "collaborative-edit:EditHostConfig"],
+  "repository": "https://github.com/atom/collaborative-edit",
+  "license": "MIT",
+  "engines": {
+    "atom": ">0.50.0"
+  },
+  "dependencies": {
+    "share": "0.7.3"
+  }
+}
