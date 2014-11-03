@@ -1,6 +1,6 @@
 CollaborativeEditView = require './collaborative-edit-view'
-_File = require './Utils/file.coffee'
-_server = require './src/hosting.coffee'
+Server = require './src/hosting'
+_File = require './Utils/file'
 
 module.exports =
   collaborativeEditView: null
