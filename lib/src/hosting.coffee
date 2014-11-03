@@ -12,49 +12,48 @@ app = connect(
   connect.static sharejs.scriptsDir
 )
 
-Host =
-{
-  host: ->
-    server = http.createServer app
+host: ->
+  server = http.createServer app
 
-    WebSocketServer = require('ws').Server
-    wss = new WebSocketServer {server}
+  WebSocketServer = require('ws').Server
+  wss = new WebSocketServer {server}
 
-    wss.on 'connection', (client) ->
-      stream = new Duplex objectMode:yes
-      stream._write = (chunk, encoding, callback) ->
-        console.log 's->c ', chunck
-        client.send JSON.stringify chunk
-        callback()
+  wss.on 'connection', (client) ->
+    stream = new Duplex objectMode:yes
+    stream._write = (chunk, encoding, callback) ->
+      console.log 's->c ', chunck
+      client.send JSON.stringify chunk
+      callback()
 
-      stream._read = ->
+    stream._read = ->
 
-      stream.headers = client.upgradeReq.headers
-      stream.remoteAddress = client.upgradeReq.connection.removeAddress
+    stream.headers = client.upgradeReq.headers
+    stream.remoteAddress = client.upgradeReq.connection.removeAddress
 
-      client.on 'message', (msg) ->
-        console.log 'c->s ', msg
-        stream.push JSON.parse msg
+    client.on 'message', (msg) ->
+      console.log 'c->s ', msg
+      stream.push JSON.parse msg
 
-      stream.on 'error', (msg) ->
-        client.close msg
+    stream.on 'error', (msg) ->
+      client.close msg
 
-      client.on 'close', (reason) ->
-        stream.push null
-        stream.emit 'close'
+    client.on 'close', (reason) ->
+      stream.push null
+      stream.emit 'close'
 
-        console.log "Client is closing."
-        client.close reason
+      console.log "Client is closing."
+      client.close reason
 
-      steam.on 'end', ->
-        client.close()
+    steam.on 'end', ->
+      client.close()
 
-      share.listen stream
+    share.listen stream
 
-    __options = $.getJSON 'config.json', (data) ->
-      console.log data
+  __options = $.getJSON 'config.json', (data) ->
+    console.log data
 
-    port = 7007
-    server.listen port
-    console.log "Listening on http://localhost:#{port}/"
-}
+  port = 7007
+  server.listen port
+  console.log "Listening on http://localhost:#{port}/"
+
+host()
