@@ -1,9 +1,20 @@
 CollaborativeEditView = require './collaborative-edit-view'
-Server = require './src/hosting'
 _File = require './Utils/file'
+#sharejs = require 'share'
+#live = require 'livedb'
+#Duplex = require 'stream'
+#express = require 'express'
+http = require 'http'
 
 module.exports =
   collaborativeEditView: null
+
+  config:
+    port:
+      type: 'integer'
+      default: 8080
+      minimum: 8000
+
 
   activate: ->
     atom.workspaceView.command "collaborative-edit:Host", => @Host()
