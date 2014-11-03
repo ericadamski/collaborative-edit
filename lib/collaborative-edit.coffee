@@ -1,10 +1,6 @@
 CollaborativeEditView = require './collaborative-edit-view'
 _File = require './Utils/file'
-#sharejs = require 'share'
-#live = require 'livedb'
-#Duplex = require 'stream'
-#express = require 'express'
-http = require 'http'
+_server = require './Host/host'
 
 module.exports =
   collaborativeEditView: null

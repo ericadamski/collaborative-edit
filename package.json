@@ -10,6 +10,7 @@
     "atom": ">0.140.0"
   },
   "dependencies": {
-    "share": "0.7.3"
+    "share": "0.7.3",
+    "express": "4.x.x"
   }
 }
