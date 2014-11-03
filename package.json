@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "share": "0.7.3",
-    "express": "4.x.x"
+    "express": "4.x.x",
+    "ws": "0.4.x",
+    "livedb": "0.4.x",
+    "loophole": "~1"
   }
 }
