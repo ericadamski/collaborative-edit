@@ -19,7 +19,7 @@ module.exports =
     console.log "Editing Host Configuration File"
     currentEditor = atom.workspace.getActiveTextEditor()
     currentPath = _File.basename currentEditor?.getPath()
-    atom.workspace.open(currentPath.concat("/Host/config.json"))
+    atom.workspace.open(currentPath.concat("/server/config.json"))
 
   deactivate: ->
     @collaborativeEditView.destroy()
