@@ -3,7 +3,7 @@
   "main": "./lib/collaborative-edit",
   "version": "0.0.0",
   "description": "Allow for LAN collaborative editing of specified documents",
-  "activationEvents": ["collaborative-edit:Host","collaborative-edit:Connect","collaborative-edit:EditHostConfig"],
+  "activationEvents": ["collaborative-edit:Host","collaborative-edit:Connect"],
   "repository": "https://github.com/atom/collaborative-edit",
   "license": "MIT",
   "engines": {
@@ -14,6 +14,7 @@
     "express": "4.x.x",
     "ws": "0.4.x",
     "livedb": "0.4.x",
-    "loophole": "~1"
+    "loophole": "~1",
+    "connect": "3.3.2"
   }
 }

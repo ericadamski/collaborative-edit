@@ -11,7 +11,6 @@
       'submenu': [
         { 'label': 'Host', 'command': 'collaborative-edit:Host' }
         { 'label': 'Connect', 'command': 'collaborative-edit:Connect'}
-        { 'label': 'Edit Host Configuration', 'command': 'collaborative-edit:EditHostConfig'}
       ]
     ]
   }
