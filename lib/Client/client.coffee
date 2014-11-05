@@ -8,19 +8,19 @@ CursorPosition = [0, 0]
 GlobalContext = undefined
 DocumentPosition = 0 # Char position from start of document
 Buffer = undefined
+CurrentDocument = undefined
 
 UpdateTitle = (title) ->
   ##  will be a little more complicated to handle
   ## I am not sure how to do it yet
 
 UpdateText = ->
-  console.log GlobalContext
   ## use the current text editor
   ## could use markers for this
+  ## this is local only
   current = atom.workspace.getActiveTextEditor()
-  currentCursorPosition = current.getCursorBufferPosition()
   currentText = current.getTextInBufferRange([CursorPosition,
-    currentCursorPosition]
+    Buffer.getEndPosition()]
   )
   GlobalContext.insert(DocumentPosition, currentText)
 
@@ -28,7 +28,7 @@ UpdateCursorPosition = (event) ->
   ## figure out the positioning of cursor in doc
   ## if text changed update text??
   CursorPosition = event.newBufferPosition
-  DocumentPosition = Buffer.characterIndexForPosition(client.CursorPosition)
+  DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
   console.log "DocumentPosition : #{DocumentPosition}, CursorPosition : #{CursorPosition}"
 
 
@@ -39,6 +39,7 @@ UpdateDestroy = ->
   ## if the file is deleted
   for handler in onChange
     handler.displose()
+  CurrentDocument.close()
 
 _connect = (CurrentTextEditor) ->
   port = atom.config.get('collaborative-edit.Port')
@@ -50,12 +51,13 @@ _connect = (CurrentTextEditor) ->
     intervalid = setInterval(
       (->
         if CurrentTextEditor.inspect().state isnt "pending"
+          onChange.push CurrentTextEditor.inspect().value.onDidChangeCursorPosition( UpdateCursorPosition )
           Buffer = CurrentTextEditor.inspect().value.buffer
-          console.log Buffer
           clearInterval(intervalid)),
       500
     )
   else
+    onChange.push CurrentTextEditor.onDidChangeCursorPosition( UpdateCursorPosition )
     Buffer = CurrentTextEditor.buffer
 
   setupFileHandlers()
@@ -65,33 +67,34 @@ _connect = (CurrentTextEditor) ->
       try
         ws = new WebSocket("ws://#{addr}:#{port}")
 
-        console.log ws
-
         share = new sharejs.client.Connection(ws)
 
         share.debug = true
 
-        doc = share.get("Sharing", docName)
+        CurrentDocument = share.get("Sharing", docName)
 
-        doc.subscribe()
+        CurrentDocument.subscribe()
 
-        doc.whenReady( ->
-          console.log "Document is ready, data : #{doc.getSnapshot()}"
+        CurrentDocument.whenReady( ->
+          console.log "Document is ready."
 
-          if (not doc.type)
-            haveNewFile doc
+          if (not CurrentDocument.type)
+            haveNewFile CurrentDocument
           else
-            GlobalContext = doc.createContext()
+            GlobalContext = CurrentDocument.createContext()
+            Buffer.setTextViaDiff(CurrentDocument.getSnapshot())
 
-          console.log GlobalContext
-          #Update local file display#
+          CurrentDocument.on('before op', (op) ->
+            #console.log "Operation #{op} has just been preformed."
+            Buffer.setTextViaDiff(op)
+          )
 
           clearInterval(interval)
         )
       catch error
         console.log error
     ),
-    5000
+    1000
   )
 
 client =
@@ -107,11 +110,10 @@ haveNewFile = (doc) ->
   GlobalContext.insert(0, text)
   DocumentPosition =
     Buffer.characterIndexForPosition(CursorPosition)
-  doc.snapshot
 
 setupFileHandlers = ->
   onChange.push Buffer.onDidStopChanging( UpdateText )
-  #onChange.push Buffer.onDidChangeCursorPosition( UpdateCursorPosition )
+  Things
   onChange.push Buffer.onDidDestroy( UpdateDestroy )
 
 module.exports = client
