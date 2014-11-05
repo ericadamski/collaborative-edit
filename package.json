@@ -16,6 +16,7 @@
     "livedb": "0.4.x",
     "loophole": "~1",
     "connect": "3.3.2",
-    "jquery": "2.x.x"
+    "jquery": "2.x.x",
+    "diff": "x"
   }
 }

@@ -19,7 +19,6 @@ wss.on 'connection', (client) ->
   console.log client
   stream = new Duplex objectMode:yes
   stream._write = (chunk, encoding, callback) ->
-    console.log 's->c ', chunk
     client.send JSON.stringify chunk
     callback()
 
@@ -29,7 +28,6 @@ wss.on 'connection', (client) ->
   stream.remoteAddress = client.upgradeReq.connection.remoteAddress
 
   client.on 'message', (data) ->
-    console.log 'c->s ', data
     stream.push JSON.parse data
 
   stream.on 'error', (msg) ->
@@ -40,7 +38,6 @@ wss.on 'connection', (client) ->
     console.log reason
     stream.push null
     stream.emit 'close'
-
     console.log 'client went away'
     client.close reason
 

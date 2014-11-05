@@ -1,6 +1,8 @@
 {allowUnsafeEval} = require 'loophole'
 sharejs = (allowUnsafeEval -> require 'share')
 $ = require 'jquery'
+diff = require 'diff'
+utils = require './client_utils'
 
 onChange = []
 
@@ -27,9 +29,10 @@ UpdateText = ->
 UpdateCursorPosition = (event) ->
   ## figure out the positioning of cursor in doc
   ## if text changed update text??
-  CursorPosition = event.newBufferPosition
-  DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
-  console.log "DocumentPosition : #{DocumentPosition}, CursorPosition : #{CursorPosition}"
+  if not event.textChanged
+    CursorPosition = event.newBufferPosition
+    DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
+    console.log "DocumentPosition : #{DocumentPosition}, CursorPosition : #{CursorPosition}"
 
 
 UpdateSelectionRange = ->
@@ -73,6 +76,19 @@ _connect = (CurrentTextEditor) ->
 
         CurrentDocument = share.get("Sharing", docName)
 
+        CurrentDocument.on('after op', (op) ->
+          #console.log "Operation #{op} has just been preformed."
+          position = utils.getOpPosition(op)
+          text = utils.getOpData(op)
+          index = Buffer.positionForCharacterIndex(position)
+          setTimeout(
+            (->
+              if position isnt undefined
+                Buffer.setTextInRange([index, text.length],
+                  text)
+            ), 2000)
+        )
+
         CurrentDocument.subscribe()
 
         CurrentDocument.whenReady( ->
@@ -83,11 +99,6 @@ _connect = (CurrentTextEditor) ->
           else
             GlobalContext = CurrentDocument.createContext()
             Buffer.setTextViaDiff(CurrentDocument.getSnapshot())
-
-          CurrentDocument.on('before op', (op) ->
-            #console.log "Operation #{op} has just been preformed."
-            Buffer.setTextViaDiff(op)
-          )
 
           clearInterval(interval)
         )
@@ -113,7 +124,6 @@ haveNewFile = (doc) ->
 
 setupFileHandlers = ->
   onChange.push Buffer.onDidStopChanging( UpdateText )
-  Things
   onChange.push Buffer.onDidDestroy( UpdateDestroy )
 
 module.exports = client
