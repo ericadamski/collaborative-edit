@@ -11,6 +11,7 @@ GlobalContext = undefined
 DocumentPosition = 0 # Char position from start of document
 Buffer = undefined
 CurrentDocument = undefined
+PreviousOperation = undefined
 
 UpdateTitle = (title) ->
   ##  will be a little more complicated to handle
@@ -78,15 +79,19 @@ _connect = (CurrentTextEditor) ->
 
         CurrentDocument.on('after op', (op) ->
           #console.log "Operation #{op} has just been preformed."
-          position = utils.getOpPosition(op)
-          text = utils.getOpData(op)
-          index = Buffer.positionForCharacterIndex(position)
-          setTimeout(
-            (->
-              if position isnt undefined
-                Buffer.setTextInRange([index, text.length],
-                  text)
-            ), 2000)
+          console.log "op is : #{op}, Previous op is : #{PreviousOperation}"
+          if utils.isTheSame(op, PreviousOperation)
+            position = utils.getOpPosition(op)
+            text = utils.getOpData(op)
+            setTimeout(
+              (->
+                if position isnt undefined
+                  index = Buffer.positionForCharacterIndex(position)
+                  textIndex = Buffer.positionForCharacterIndex(position + text.length)
+                  console.log Buffer.setTextInRange([index, textIndex],
+                    text)
+              ), 2000)
+          PreviousOperation = op
         )
 
         CurrentDocument.subscribe()
