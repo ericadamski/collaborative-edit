@@ -34,6 +34,19 @@ utils =
       return true if ( (crOpData is prevOpData) and (crOpPos is prevOpPos) )
 
       return false
+
+    isDelete: (op) ->
+      return false if utils.isEmpty op
+
+      if op.length is 1
+        console.log op[0].d
+        return true if op[0].d isnt undefined
+
+      return false
+
+    getDeleteLength: (op) ->
+      if utils.isDelete op
+        return op[0].d
   }
 
 module.exports = utils

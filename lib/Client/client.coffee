@@ -10,6 +10,7 @@ CursorPosition = [0, 0]
 GlobalContext = undefined
 DocumentPosition = 0 # Char position from start of document
 Buffer = undefined
+LocalEditor = undefined
 CurrentDocument = undefined
 PreviousOperation = undefined
 
@@ -21,19 +22,28 @@ UpdateText = ->
   ## use the current text editor
   ## could use markers for this
   ## this is local only
-  current = atom.workspace.getActiveTextEditor()
-  currentText = current.getTextInBufferRange([CursorPosition,
-    Buffer.getEndPosition()]
+  console.log "Updating local text"
+  editorPosition = LocalEditor.getCursorBufferPosition()
+  currentText = LocalEditor.getTextInBufferRange([CursorPosition,
+    editorPosition]
   )
-  GlobalContext.insert(DocumentPosition, currentText)
+  console.log GlobalContext
+  if editorPosition < CursorPosition
+    #Delete
+    GlobalContext.remove(DocumentPosition, 1)
+  else
+    #insert
+    GlobalContext.insert(DocumentPosition, currentText)
 
 UpdateCursorPosition = (event) ->
   ## figure out the positioning of cursor in doc
   ## if text changed update text??
-  if not event.textChanged
+  oldPos = Buffer.characterIndexForPosition(event.oldBufferPosition)
+  newPos = Buffer.characterIndexForPosition(event.newBufferPosition)
+  if ((not event.textChanged) and ( oldPos isnt newPos + 1))
     CursorPosition = event.newBufferPosition
     DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
-    console.log "DocumentPosition : #{DocumentPosition}, CursorPosition : #{CursorPosition}"
+    console.log "DocumentPosition new: #{DocumentPosition} old: #{event.oldBufferPosition}, CursorPosition : #{CursorPosition}"
 
 
 UpdateSelectionRange = ->
@@ -55,15 +65,14 @@ _connect = (CurrentTextEditor) ->
     intervalid = setInterval(
       (->
         if CurrentTextEditor.inspect().state isnt "pending"
-          onChange.push CurrentTextEditor.inspect().value.onDidChangeCursorPosition( UpdateCursorPosition )
-          Buffer = CurrentTextEditor.inspect().value.buffer
+          LocalEditor = CurrentTextEditor.inspect().value
           clearInterval(intervalid)),
       500
     )
   else
-    onChange.push CurrentTextEditor.onDidChangeCursorPosition( UpdateCursorPosition )
-    Buffer = CurrentTextEditor.buffer
+    LocalEditor = CurrentTextEditor
 
+  Buffer = LocalEditor.buffer
   setupFileHandlers()
 
   interval = setInterval(
@@ -77,21 +86,18 @@ _connect = (CurrentTextEditor) ->
 
         CurrentDocument = share.get("Sharing", docName)
 
-        CurrentDocument.on('after op', (op) ->
-          #console.log "Operation #{op} has just been preformed."
+        CurrentDocument.on('op', (op, local) ->
+          console.log op
+          console.log local
+        )
+
+        CurrentDocument.on('after op', (op, local) ->
+          ## only for remote operations
+          console.log local
           console.log "op is : #{op}, Previous op is : #{PreviousOperation}"
-          if utils.isTheSame(op, PreviousOperation)
-            position = utils.getOpPosition(op)
-            text = utils.getOpData(op)
-            setTimeout(
-              (->
-                if position isnt undefined
-                  index = Buffer.positionForCharacterIndex(position)
-                  textIndex = Buffer.positionForCharacterIndex(position + text.length)
-                  console.log Buffer.setTextInRange([index, textIndex],
-                    text)
-              ), 2000)
-          PreviousOperation = op
+          if local is false
+            console.log "Remote Operation"
+          remoteUpdateDocumentContents op if local is false
         )
 
         CurrentDocument.subscribe()
@@ -130,5 +136,30 @@ haveNewFile = (doc) ->
 setupFileHandlers = ->
   onChange.push Buffer.onDidStopChanging( UpdateText )
   onChange.push Buffer.onDidDestroy( UpdateDestroy )
+  onChange.push LocalEditor.onDidChangeCursorPosition( UpdateCursorPosition )
+
+remoteUpdateDocumentContents = (op) ->
+  if not utils.isTheSame(op, PreviousOperation)
+    if utils.isDelete(op)
+      # Backspace
+      position = utils.getOpPosition(PreviousOperation)
+      if position isnt undefined
+        startDel = Buffer.positionForCharacterIndex(position)
+        endDel = Buffer.positionForCharacterIndex(position - utils.getDeleteLength(op))
+        Buffer.delete([startDel, endDel])
+    else
+      # Insert
+      position = utils.getOpPosition(op)
+      text = utils.getOpData(op)
+      setTimeout(
+        (->
+          if position isnt undefined
+            index = Buffer.positionForCharacterIndex(position)
+            textIndex = Buffer.positionForCharacterIndex(position + text.length)
+            console.log Buffer.setTextInRange([index, textIndex],
+              text)
+        ), 500)
+  PreviousOperation = op
+
 
 module.exports = client
