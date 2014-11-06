@@ -14,6 +14,13 @@ LocalEditor = undefined
 CurrentDocument = undefined
 PreviousOperation = undefined
 
+_UpdateCursorPosition = (pos) ->
+  if pos is undefined
+    CursorPosition = LocalEditor.getCursorBufferPosition()
+  else
+    CursorPosition = pos.newBufferPosition
+  DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
+
 UpdateTitle = (title) ->
   ##  will be a little more complicated to handle
   ## I am not sure how to do it yet
@@ -27,13 +34,18 @@ UpdateText = ->
   currentText = LocalEditor.getTextInBufferRange([CursorPosition,
     editorPosition]
   )
-  console.log GlobalContext
-  if editorPosition < CursorPosition
+  editorIndex = Buffer.characterIndexForPosition(editorPosition)
+  cursorIndex = Buffer.characterIndexForPosition(CursorPosition)
+  console.log "CursorPos : #{cursorIndex}, Editor : #{editorIndex}"
+  if editorIndex <= cursorIndex
     #Delete
+    console.log "Sending Delete"
     GlobalContext.remove(DocumentPosition, 1)
   else
     #insert
+    console.log "Sending insert"
     GlobalContext.insert(DocumentPosition, currentText)
+  _UpdateCursorPosition()
 
 UpdateCursorPosition = (event) ->
   ## figure out the positioning of cursor in doc
@@ -41,9 +53,7 @@ UpdateCursorPosition = (event) ->
   oldPos = Buffer.characterIndexForPosition(event.oldBufferPosition)
   newPos = Buffer.characterIndexForPosition(event.newBufferPosition)
   if ((not event.textChanged) and ( oldPos isnt newPos + 1))
-    CursorPosition = event.newBufferPosition
-    DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
-    console.log "DocumentPosition new: #{DocumentPosition} old: #{event.oldBufferPosition}, CursorPosition : #{CursorPosition}"
+    _UpdateCursorPosition(event)
 
 
 UpdateSelectionRange = ->
@@ -66,13 +76,14 @@ _connect = (CurrentTextEditor) ->
       (->
         if CurrentTextEditor.inspect().state isnt "pending"
           LocalEditor = CurrentTextEditor.inspect().value
+          Buffer = LocalEditor.buffer
           clearInterval(intervalid)),
       500
     )
   else
     LocalEditor = CurrentTextEditor
+    Buffer = LocalEditor.buffer
 
-  Buffer = LocalEditor.buffer
   setupFileHandlers()
 
   interval = setInterval(
@@ -86,14 +97,8 @@ _connect = (CurrentTextEditor) ->
 
         CurrentDocument = share.get("Sharing", docName)
 
-        CurrentDocument.on('op', (op, local) ->
-          console.log op
-          console.log local
-        )
-
         CurrentDocument.on('after op', (op, local) ->
           ## only for remote operations
-          console.log local
           console.log "op is : #{op}, Previous op is : #{PreviousOperation}"
           if local is false
             console.log "Remote Operation"
@@ -140,13 +145,18 @@ setupFileHandlers = ->
 
 remoteUpdateDocumentContents = (op) ->
   if not utils.isTheSame(op, PreviousOperation)
+    console.log op
     if utils.isDelete(op)
       # Backspace
-      position = utils.getOpPosition(PreviousOperation)
-      if position isnt undefined
-        startDel = Buffer.positionForCharacterIndex(position)
-        endDel = Buffer.positionForCharacterIndex(position - utils.getDeleteLength(op))
-        Buffer.delete([startDel, endDel])
+      position = utils.getOpPosition(op)
+      setTimeout(
+        (->
+          if position isnt undefined
+            startDel = Buffer.positionForCharacterIndex(position)
+            endDel = Buffer.positionForCharacterIndex(position - utils.getDeleteLength(op))
+            Buffer.delete([startDel, endDel])),
+        500
+      )
     else
       # Insert
       position = utils.getOpPosition(op)
@@ -156,8 +166,10 @@ remoteUpdateDocumentContents = (op) ->
           if position isnt undefined
             index = Buffer.positionForCharacterIndex(position)
             textIndex = Buffer.positionForCharacterIndex(position + text.length)
-            console.log Buffer.setTextInRange([index, textIndex],
-              text)
+            console.log Buffer
+            console.log text
+            console.log "Buffer : #{Buffer}, index : #{index}, textIndex : #{textIndex}, text : #{text}"
+            Buffer.setTextInRange([index, textIndex], text)
         ), 500)
   PreviousOperation = op
 

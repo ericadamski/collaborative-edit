@@ -41,6 +41,9 @@ utils =
       if op.length is 1
         console.log op[0].d
         return true if op[0].d isnt undefined
+      else
+        console.log op[1].d
+        return true if op[1].d isnt undefined
 
       return false
 
