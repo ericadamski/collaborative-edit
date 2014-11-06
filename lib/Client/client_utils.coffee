@@ -49,7 +49,10 @@ utils =
 
     getDeleteLength: (op) ->
       if utils.isDelete op
-        return op[0].d
+        if op.length is 1
+          return op[0].d if op[0].d isnt undefined
+        else
+          return op[1].d if op[1].d isnt undefined
   }
 
 module.exports = utils

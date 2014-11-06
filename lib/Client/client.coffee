@@ -148,12 +148,12 @@ remoteUpdateDocumentContents = (op) ->
     console.log op
     if utils.isDelete(op)
       # Backspace
-      position = utils.getOpPosition(op)
+      position = utils.getOpPosition(PreviousOperation)
       setTimeout(
         (->
           if position isnt undefined
             startDel = Buffer.positionForCharacterIndex(position)
-            endDel = Buffer.positionForCharacterIndex(position - utils.getDeleteLength(op))
+            endDel = Buffer.positionForCharacterIndex(utils.getDeleteLength(op))
             Buffer.delete([startDel, endDel])),
         500
       )
@@ -166,9 +166,6 @@ remoteUpdateDocumentContents = (op) ->
           if position isnt undefined
             index = Buffer.positionForCharacterIndex(position)
             textIndex = Buffer.positionForCharacterIndex(position + text.length)
-            console.log Buffer
-            console.log text
-            console.log "Buffer : #{Buffer}, index : #{index}, textIndex : #{textIndex}, text : #{text}"
             Buffer.setTextInRange([index, textIndex], text)
         ), 500)
   PreviousOperation = op

@@ -43,3 +43,4 @@ module.exports =
   deactivate: ->
 
   serialize: ->
+  
