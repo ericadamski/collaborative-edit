@@ -13,6 +13,7 @@ Buffer = undefined
 LocalEditor = undefined
 CurrentDocument = undefined
 PreviousOperation = undefined
+isOperationLocal = true
 
 _UpdateCursorPosition = (pos) ->
   if pos is undefined
@@ -25,34 +26,44 @@ UpdateTitle = (title) ->
   ##  will be a little more complicated to handle
   ## I am not sure how to do it yet
 
-UpdateText = ->
+UpdateText = (change) ->
+  console.log change
   ## use the current text editor
   ## could use markers for this
   ## this is local only
-  console.log "Updating local text"
-  editorPosition = LocalEditor.getCursorBufferPosition()
-  currentText = LocalEditor.getTextInBufferRange([CursorPosition,
-    editorPosition]
-  )
-  editorIndex = Buffer.characterIndexForPosition(editorPosition)
-  cursorIndex = Buffer.characterIndexForPosition(CursorPosition)
-  console.log "CursorPos : #{cursorIndex}, Editor : #{editorIndex}"
-  if editorIndex <= cursorIndex
-    #Delete
-    console.log "Sending Delete"
-    GlobalContext.remove(DocumentPosition, 1)
-  else
-    #insert
-    console.log "Sending insert"
-    GlobalContext.insert(DocumentPosition, currentText)
+
+  current = Buffer.getMaxCharacterIndex();
+  start = Buffer.characterIndexForPosition(change.newRange.start);
+  end = Buffer.characterIndexForPosition(change.newRange.end);
+
+  console.log start
+  console.log end
+
+  #delete old replace with new
+
+  if isOperationLocal
+    console.log "Updating local text"
+    if change.oldText is ""
+      # just do insert
+      console.log "Doing Insert"
+      GlobalContext.insert(start, change.newText)
+    else if change.newText is ""
+      # just do delete
+      console.log "Doing Delete"
+      GlobalContext.remove(start, Math.max 1, (end - start))
+    else
+      # old text is something and new text is something
+      console.log "Doing Replace"
+      GlobalContext.remove(start, change.oldText)
+      GlobalContext.insert(start, change.newText)
   _UpdateCursorPosition()
 
 UpdateCursorPosition = (event) ->
   ## figure out the positioning of cursor in doc
-  ## if text changed update text??
   oldPos = Buffer.characterIndexForPosition(event.oldBufferPosition)
   newPos = Buffer.characterIndexForPosition(event.newBufferPosition)
   if ((not event.textChanged) and ( oldPos isnt newPos + 1))
+    console.log "Doing Update becuase oldPos is : #{oldPos} and newPos is : #{newPos}"
     _UpdateCursorPosition(event)
 
 
@@ -62,7 +73,7 @@ UpdateSelectionRange = ->
 UpdateDestroy = ->
   ## if the file is deleted
   for handler in onChange
-    handler.displose()
+    handler.displose() unless handler is undefined
   CurrentDocument.close()
 
 _connect = (CurrentTextEditor) ->
@@ -84,7 +95,7 @@ _connect = (CurrentTextEditor) ->
     LocalEditor = CurrentTextEditor
     Buffer = LocalEditor.buffer
 
-  setupFileHandlers()
+  utils.setBuffer Buffer
 
   interval = setInterval(
     ( ->
@@ -102,7 +113,10 @@ _connect = (CurrentTextEditor) ->
           console.log "op is : #{op}, Previous op is : #{PreviousOperation}"
           if local is false
             console.log "Remote Operation"
-          remoteUpdateDocumentContents op if local is false
+            isOperationLocal = false
+            remoteUpdateDocumentContents op
+
+          isOperationLocal = true
         )
 
         CurrentDocument.subscribe()
@@ -116,6 +130,9 @@ _connect = (CurrentTextEditor) ->
             GlobalContext = CurrentDocument.createContext()
             Buffer.setTextViaDiff(CurrentDocument.getSnapshot())
 
+          setupFileHandlers()
+          _UpdateCursorPosition()
+
           clearInterval(interval)
         )
       catch error
@@ -128,6 +145,9 @@ client =
   {
     connect: (CurrentTextEditor) ->
       _connect(CurrentTextEditor)
+
+    deactivate: ->
+      UpdateDestroy()
   }
 
 haveNewFile = (doc) ->
@@ -139,35 +159,16 @@ haveNewFile = (doc) ->
     Buffer.characterIndexForPosition(CursorPosition)
 
 setupFileHandlers = ->
-  onChange.push Buffer.onDidStopChanging( UpdateText )
+  #onChange.push Buffer.onDidStopChanging( UpdateText )
   onChange.push Buffer.onDidDestroy( UpdateDestroy )
   onChange.push LocalEditor.onDidChangeCursorPosition( UpdateCursorPosition )
+  onChange.push Buffer.on('changed', UpdateText)
 
 remoteUpdateDocumentContents = (op) ->
-  if not utils.isTheSame(op, PreviousOperation)
-    console.log op
-    if utils.isDelete(op)
-      # Backspace
-      position = utils.getOpPosition(PreviousOperation)
-      setTimeout(
-        (->
-          if position isnt undefined
-            startDel = Buffer.positionForCharacterIndex(position)
-            endDel = Buffer.positionForCharacterIndex(utils.getDeleteLength(op))
-            Buffer.delete([startDel, endDel])),
-        500
-      )
-    else
-      # Insert
-      position = utils.getOpPosition(op)
-      text = utils.getOpData(op)
-      setTimeout(
-        (->
-          if position isnt undefined
-            index = Buffer.positionForCharacterIndex(position)
-            textIndex = Buffer.positionForCharacterIndex(position + text.length)
-            Buffer.setTextInRange([index, textIndex], text)
-        ), 500)
+  if not utils.isOpTheSame(op, PreviousOperation)
+    utils.HandleOp op
+
+  console.log 'Updating Ops'
   PreviousOperation = op
 
 

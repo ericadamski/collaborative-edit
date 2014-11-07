@@ -3,6 +3,12 @@ m_file = require './Utils/file'
 m_server = require './Host/host'
 m_client = require './Client/client'
 
+startClient = (editor, hosting) ->
+  if hosting
+    m_client.connect(editor)
+  else
+    m_client.connect()
+
 module.exports =
   collaborativeEditView: null
 
@@ -24,23 +30,16 @@ module.exports =
     atom.workspaceView.command "collaborative-edit:Connect", => @Connect()
 
   Host: ->
+    editor = atom.workspace.getActiveEditor()
     m_server.host()
-
-    _currentEditor = atom.workspace.getActiveTextEditor()
-
-    if not _currentEditor
-      _currentEditor = atom.workspace.open()
-      m_client.connect(_currentEditor)
-    else
-      atom.config.set('collaborative-edit.DocumentName',
-        _currentEditor.getTitle())
-      m_client.connect(_currentEditor)
+    atom.config.set('collaborative-edit.DocumentName',
+      editor.getTitle())
+    startClient(editor, true)
 
   Connect: ->
-    console.log "Connecting . . ."
-    m_client.connect()
+    startClient(null, false)
 
   deactivate: ->
+    m_client.deactivate()
 
   serialize: ->
-  
