@@ -53,8 +53,7 @@ h =
   {
     host: ->
       server.listen(port, addr)
+      console.log "Listening on http://#{addr}:#{port}/"
   }
-
-console.log "Listening on http://#{addr}:#{port}/"
 
 module.exports = h

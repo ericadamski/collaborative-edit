@@ -16,6 +16,7 @@ PreviousOperation = undefined
 isOperationLocal = true
 
 _UpdateCursorPosition = (pos) ->
+  #only recording local position for now
   if pos is undefined
     CursorPosition = LocalEditor.getCursorBufferPosition()
   else
@@ -32,7 +33,6 @@ UpdateText = (change) ->
   ## could use markers for this
   ## this is local only
 
-  current = Buffer.getMaxCharacterIndex();
   start = Buffer.characterIndexForPosition(change.newRange.start);
   end = Buffer.characterIndexForPosition(change.newRange.end);
 
@@ -56,6 +56,8 @@ UpdateText = (change) ->
       console.log "Doing Replace"
       GlobalContext.remove(start, change.oldText)
       GlobalContext.insert(start, change.newText)
+
+  isOperationLocal
   _UpdateCursorPosition()
 
 UpdateCursorPosition = (event) ->
@@ -115,8 +117,6 @@ _connect = (CurrentTextEditor) ->
             console.log "Remote Operation"
             isOperationLocal = false
             remoteUpdateDocumentContents op
-
-          isOperationLocal = true
         )
 
         CurrentDocument.subscribe()
@@ -159,7 +159,6 @@ haveNewFile = (doc) ->
     Buffer.characterIndexForPosition(CursorPosition)
 
 setupFileHandlers = ->
-  #onChange.push Buffer.onDidStopChanging( UpdateText )
   onChange.push Buffer.onDidDestroy( UpdateDestroy )
   onChange.push LocalEditor.onDidChangeCursorPosition( UpdateCursorPosition )
   onChange.push Buffer.on('changed', UpdateText)
@@ -167,9 +166,7 @@ setupFileHandlers = ->
 remoteUpdateDocumentContents = (op) ->
   if not utils.isOpTheSame(op, PreviousOperation)
     utils.HandleOp op
-
   console.log 'Updating Ops'
   PreviousOperation = op
-
 
 module.exports = client
