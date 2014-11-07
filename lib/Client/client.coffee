@@ -112,6 +112,7 @@ _connect = (CurrentTextEditor) ->
 
         CurrentDocument.on('after op', (op, local) ->
           ## only for remote operations
+          console.log local
           console.log "op is : #{op}, Previous op is : #{PreviousOperation}"
           if local is false
             console.log "Remote Operation"
