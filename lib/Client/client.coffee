@@ -57,7 +57,7 @@ UpdateText = (change) ->
       GlobalContext.remove(start, change.oldText)
       GlobalContext.insert(start, change.newText)
 
-  isOperationLocal
+  isOperationLocal = true
   _UpdateCursorPosition()
 
 UpdateCursorPosition = (event) ->
