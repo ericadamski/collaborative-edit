@@ -20,7 +20,8 @@ handleInsertOp = (string) ->
       console.log position
       Buffer.insert(position, string)
       @OpIndex += string.length
-    ), 500)
+    ), 50)
+  console.log "Op is #{noOp}"
 
 handleDeleteOp = (toDelete) ->
   # toDelete is a number of chars to remove,
@@ -32,7 +33,8 @@ handleDeleteOp = (toDelete) ->
       to = Buffer.positionForCharacterIndex(@OpIndex + toDelete)
       console.log "Deleting from #{from} to #{to}"
       Buffer.delete([from, to])
-    ), 500)
+    ), 50)
+  console.log "Op is #{noOp}"
 
 utils =
   {
@@ -144,8 +146,9 @@ utils =
     doneRemoteOp: ->
       return noOp
 
-    updateDoneRemoteOp: ->
-      noOp = (not noOp)
+    updateDoneRemoteOp: (bool) ->
+      console.log "Updating 'doneRemoteOp' to #{bool}"
+      noOp = bool
   }
 
 module.exports = utils

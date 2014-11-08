@@ -41,7 +41,7 @@ UpdateText = (change) ->
 
   #delete old replace with new
 
-  if isOperationLocal
+  if not utils.doneRemoteOp()
     console.log "Updating local text"
     if change.oldText is ""
       # just do insert
@@ -57,7 +57,7 @@ UpdateText = (change) ->
       GlobalContext.remove(start, change.oldText)
       GlobalContext.insert(start, change.newText)
 
-  isOperationLocal = true
+  utils.updateDoneRemoteOp(false)
   _UpdateCursorPosition()
 
 UpdateCursorPosition = (event) ->
