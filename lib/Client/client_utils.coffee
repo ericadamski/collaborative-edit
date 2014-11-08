@@ -12,28 +12,22 @@ handlePositionChangeOp = (position) ->
 handleInsertOp = (string) ->
   # Insert
   noOp = true
-  setTimeout(
-    (->
-      console.log Buffer
-      console.log @OpIndex
-      position = Buffer.positionForCharacterIndex(@OpIndex)
-      console.log position
-      Buffer.insert(position, string)
-      @OpIndex += string.length
-    ), 50)
+  console.log Buffer
+  console.log @OpIndex
+  position = Buffer.positionForCharacterIndex(@OpIndex)
+  console.log position
+  Buffer.insert(position, string)
+  @OpIndex += string.length
   console.log "Op is #{noOp}"
 
 handleDeleteOp = (toDelete) ->
   # toDelete is a number of chars to remove,
   # we shall have to see is forward or back
   noOp = true
-  setTimeout(
-    (->
-      from = Buffer.positionForCharacterIndex(@OpIndex)
-      to = Buffer.positionForCharacterIndex(@OpIndex + toDelete)
-      console.log "Deleting from #{from} to #{to}"
-      Buffer.delete([from, to])
-    ), 50)
+  from = Buffer.positionForCharacterIndex(@OpIndex)
+  to = Buffer.positionForCharacterIndex(@OpIndex + toDelete)
+  console.log "Deleting from #{from} to #{to}"
+  Buffer.delete([from, to])
   console.log "Op is #{noOp}"
 
 utils =

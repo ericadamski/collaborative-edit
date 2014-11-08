@@ -51,7 +51,7 @@ UpdateText = (change) ->
       # just do delete
       console.log "Doing Delete"
       GlobalContext.remove(start, Math.max 1, (end - start))
-    else
+    else if (change.oldText.length > 0 and change.newText.length > 0)
       # old text is something and new text is something
       console.log "Doing Replace"
       GlobalContext.remove(start, change.oldText)
@@ -169,5 +169,6 @@ remoteUpdateDocumentContents = (op) ->
     utils.HandleOp op
   console.log 'Updating Ops'
   PreviousOperation = op
+  utils.updateDoneRemoteOp(false)
 
 module.exports = client
