@@ -57,6 +57,8 @@ utils =
     HandleOp: (operation) ->
       return [] if utils.isOpEmpty(operation)
 
+      console.log Buffer
+
       for op in operation
         type = utils.getOpType(op)
 

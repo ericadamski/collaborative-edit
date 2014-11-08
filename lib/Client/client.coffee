@@ -89,6 +89,8 @@ _connect = (CurrentTextEditor) ->
       (->
         if CurrentTextEditor.inspect().state isnt "pending"
           LocalEditor = CurrentTextEditor.inspect().value
+          console.log Buffer
+          console.log LocalEditor
           Buffer = LocalEditor.buffer
           clearInterval(intervalid)),
       500
@@ -98,6 +100,8 @@ _connect = (CurrentTextEditor) ->
     Buffer = LocalEditor.buffer
 
   utils.setBuffer Buffer
+  console.log Buffer
+  console.log LocalEditor
 
   interval = setInterval(
     ( ->
