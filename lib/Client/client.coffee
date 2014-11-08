@@ -99,10 +99,6 @@ _connect = (CurrentTextEditor) ->
     LocalEditor = CurrentTextEditor
     Buffer = LocalEditor.buffer
 
-  utils.setBuffer Buffer
-  console.log Buffer
-  console.log LocalEditor
-
   interval = setInterval(
     ( ->
       try
@@ -128,6 +124,10 @@ _connect = (CurrentTextEditor) ->
 
         CurrentDocument.whenReady( ->
           console.log "Document is ready."
+
+          utils.setBuffer Buffer
+          console.log Buffer
+          console.log LocalEditor
 
           if (not CurrentDocument.type)
             haveNewFile CurrentDocument
