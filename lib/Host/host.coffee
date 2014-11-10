@@ -5,6 +5,10 @@ connect = allowUnsafeEval -> require 'connect'
 livedb = allowUnsafeEval -> require 'livedb'
 http = require 'http'
 
+clientAddresses = []
+
+clientNumber = 0
+
 app = connect()
 
 backend = livedb.client livedb.memory()
@@ -16,7 +20,6 @@ server = http.createServer app
 WebSocketServer = require('ws').Server
 wss = new WebSocketServer {server}
 wss.on 'connection', (client) ->
-  console.log client
   stream = new Duplex objectMode:yes
   stream._write = (chunk, encoding, callback) ->
     client.send JSON.stringify chunk
@@ -26,6 +29,9 @@ wss.on 'connection', (client) ->
 
   stream.headers = client.upgradeReq.headers
   stream.remoteAddress = client.upgradeReq.connection.remoteAddress
+  clientAddresses.push {"id": ++clientNumber, "address": stream.remoteAddress, "_clientObj": client}
+
+  console.log clientAddresses
 
   client.on 'message', (data) ->
     stream.push JSON.parse data
