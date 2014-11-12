@@ -75,7 +75,7 @@ client =
       _connect(CurrentTextEditor)
       for pane in atom.workspace.getPaneItems()
         if pane.getTitle isnt undefined
-          if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
+          if pane.getTitle() is atom.config.get('collaborative-edit:DocumentName')
             CurrentPane = pane
 
     deactivate: ->

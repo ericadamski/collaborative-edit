@@ -11,6 +11,7 @@ edit = undefined
 startClient = (hosting) ->
   if hosting
     editor = atom.workspace.getActiveEditor()
+    atom.config.set('collaborative-edit:DocumentName', editor.getTitle())
     m_client.connect(editor)
   else
     m_client.connect()
@@ -35,16 +36,16 @@ class EditConfig extends View
   @content: (currentFile) ->
     @div class: 'collaborative-edit overlay from-top mini', =>
       @h1 "Connection Information"
-      @div =>
-        @div "Server IP Address:"
+      @div class: 'block', =>
+        @label "Server IP Address:"
         @subview 'miniAddress', new EditorView(mini: true, placeholderText: 'localhost')
         @div class: 'message', outlet: '_address'
-      @div =>
-        @div "Server Port:"
+      @div class: 'blocl', =>
+        @label "Server Port:"
         @subview 'miniPort', new EditorView(mini: true, placeholderText: '8080')
         @div class: 'message', outlet: '_port'
-      @div =>
-        @div "File Name:"
+      @div class: 'block', =>
+        @label "File Name:"
         @subview 'miniFile', new EditorView(mini: true, placeholderText: currentFile)
         @div class: 'message', outlet: '_name'
 
@@ -52,12 +53,15 @@ class EditConfig extends View
     @on 'core:confirm', => @confirm()
     @on 'core:cancel', => @detach()
 
+    @miniAddress.setTooltip("The ADDRESS to host on, or connect to. Default : #{atom.config.get('collaborative-edit:ServerAddress')}")
     @miniAddress.preempt 'textInput', (e) =>
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
+    @miniPort.setTooltip("The PORT to host on, or connect to. Default : #{atom.config.get('collaborative-edit:Port')}")
     @miniPort.preempt 'textInput', (e) =>
       false unless e.originalEvent.data.match(/[0-9]/)
 
+    @miniFile.setTooltip("The DOCUMENT to host on, or connect to. Default : #{atom.config.get('collaborative-edit:DocumentName')}")
     @miniFile.preempt 'textInput', (e) =>
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
@@ -71,7 +75,6 @@ class EditConfig extends View
     @detach()
 
   confirm: ->
-    console.log "Address : #{@miniAddress.getText()}, Port : #{@miniPort.getText()}, File Name : #{@miniFile.getText()}"
     addr = @miniAddress.getText()
     port = @miniPort.getText()
     file = @miniFile.getText()
