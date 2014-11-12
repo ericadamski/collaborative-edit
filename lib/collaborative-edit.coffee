@@ -1,6 +1,6 @@
 CollaborativeEditView = require './collaborative-edit-view'
 m_file = require './Utils/file'
-m_server = require './Host/host'
+m_server = undefined
 m_client = require './Client/client'
 
 isServer = false
@@ -33,6 +33,7 @@ module.exports =
     atom.workspaceView.command "collaborative-edit:Disconnect", => @Disconnect()
 
   Host: ->
+    m_server = require './Host/host'
     isServer = true
     editor = atom.workspace.getActiveEditor()
     m_server.host()
@@ -44,10 +45,12 @@ module.exports =
     startClient(null, false)
 
   Disconnect: ->
-    ## need to make sure to close all local clients first, or maybe close them on the server? ##
     m_server.close() if isServer
+    @deactivate()
 
   deactivate: ->
     m_client.deactivate()
+    m_server = undefined
+    isServer = false
 
   serialize: ->

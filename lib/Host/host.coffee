@@ -43,6 +43,9 @@ wss.on 'connection', (client) ->
     client.close msg
 
   client.on 'close', (reason) ->
+    toRemove = getCurrentClient(client)
+    if toRemove isnt undefined
+      clientAddresses.splice(toRemove.id - 1, 1, toRemove)
     utils.debug reason
     stream.push null
     stream.emit 'close'
@@ -62,6 +65,11 @@ if port is undefined
 
 if addr is undefined
   addr = 'localhost'
+
+getCurrentClient = (client) ->
+  for c in clientAddresses
+    if c._clientObj is client
+      return c
 
 h =
   {

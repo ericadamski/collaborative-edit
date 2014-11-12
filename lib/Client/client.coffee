@@ -4,6 +4,8 @@ remote = require './client_remote'
 local = require './client_local'
 utils = require '../Utils/utils'
 
+CurrentPane = undefined
+
 local.setRemote remote
 
 _connect = (CurrentTextEditor) ->
@@ -71,9 +73,14 @@ client =
   {
     connect: (CurrentTextEditor) ->
       _connect(CurrentTextEditor)
+      for pane in atom.workspace.getPaneItems()
+        if pane.getTitle isnt undefined
+          if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
+            CurrentPane = pane
 
     deactivate: ->
       local.UpdateDestroy()
+      CurrentPane.destroy()
   }
 
 haveNewFile = (doc) ->
