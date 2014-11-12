@@ -11,6 +11,7 @@
       'submenu': [
         { 'label': 'Host', 'command': 'collaborative-edit:Host' }
         { 'label': 'Connect', 'command': 'collaborative-edit:Connect'}
+        { 'label': 'Disconnect', 'command': 'collaborative-edit:Disconnect'}
       ]
     ]
   }

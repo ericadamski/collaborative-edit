@@ -3,6 +3,8 @@ m_file = require './Utils/file'
 m_server = require './Host/host'
 m_client = require './Client/client'
 
+isServer = false
+
 startClient = (editor, hosting) ->
   if hosting
     m_client.connect(editor)
@@ -28,8 +30,10 @@ module.exports =
   activate: ->
     atom.workspaceView.command "collaborative-edit:Host", => @Host()
     atom.workspaceView.command "collaborative-edit:Connect", => @Connect()
+    atom.workspaceView.command "collaborative-edit:Disconnect", => @Disconnect()
 
   Host: ->
+    isServer = true
     editor = atom.workspace.getActiveEditor()
     m_server.host()
     atom.config.set('collaborative-edit.DocumentName',
@@ -38,6 +42,10 @@ module.exports =
 
   Connect: ->
     startClient(null, false)
+
+  Disconnect: ->
+    ## need to make sure to close all local clients first, or maybe close them on the server? ##
+    m_server.close() if isServer
 
   deactivate: ->
     m_client.deactivate()

@@ -10,3 +10,4 @@
 '.workspace':
   'ctrl-alt-h': 'collaborative-edit:Host'
   'ctrl-alt-c': 'collaborative-edit:Connect'
+  'ctrl-alt-shift-c': 'collaborative-edit:Disconnect'

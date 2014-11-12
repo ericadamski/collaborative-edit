@@ -1,82 +1,10 @@
 {allowUnsafeEval} = require 'loophole'
 sharejs = (allowUnsafeEval -> require 'share')
-$ = require 'jquery'
-diff = require 'diff'
-utils = require './client_utils'
+remote = require './client_remote'
+local = require './client_local'
+utils = require '../Utils/utils'
 
-onChange = []
-
-CursorPosition = [0, 0]
-GlobalContext = undefined
-DocumentPosition = 0 # Char position from start of document
-Buffer = undefined
-LocalEditor = undefined
-CurrentDocument = undefined
-PreviousOperation = undefined
-isOperationLocal = true
-
-_UpdateCursorPosition = (pos) ->
-  #only recording local position for now
-  if pos is undefined
-    CursorPosition = LocalEditor.getCursorBufferPosition()
-  else
-    CursorPosition = pos.newBufferPosition
-  DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
-
-UpdateTitle = (title) ->
-  ##  will be a little more complicated to handle
-  ## I am not sure how to do it yet
-
-UpdateText = (change) ->
-  console.log change
-  ## use the current text editor
-  ## could use markers for this
-  ## this is local only
-
-  start = Buffer.characterIndexForPosition(change.newRange.start);
-  end = Buffer.characterIndexForPosition(change.newRange.end);
-
-  console.log start
-  console.log end
-
-  #delete old replace with new
-
-  if not utils.doneRemoteOp()
-    console.log "Updating local text"
-    if change.oldText is ""
-      # just do insert
-      console.log "Doing Insert"
-      GlobalContext.insert(start, change.newText)
-    else if change.newText is ""
-      # just do delete
-      console.log "Doing Delete"
-      GlobalContext.remove(start, Math.max 1, (end - start))
-    else if (change.oldText.length > 0 and change.newText.length > 0)
-      # old text is something and new text is something
-      console.log "Doing Replace"
-      GlobalContext.remove(start, change.oldText)
-      GlobalContext.insert(start, change.newText)
-
-  utils.updateDoneRemoteOp(false)
-  _UpdateCursorPosition()
-
-UpdateCursorPosition = (event) ->
-  ## figure out the positioning of cursor in doc
-  oldPos = Buffer.characterIndexForPosition(event.oldBufferPosition)
-  newPos = Buffer.characterIndexForPosition(event.newBufferPosition)
-  if ((not event.textChanged) and ( oldPos isnt newPos + 1))
-    console.log "Doing Update becuase oldPos is : #{oldPos} and newPos is : #{newPos}"
-    _UpdateCursorPosition(event)
-
-
-UpdateSelectionRange = ->
-  ## highlighing
-
-UpdateDestroy = ->
-  ## if the file is deleted
-  for handler in onChange
-    handler.displose() unless handler is undefined
-  CurrentDocument.close()
+local.setRemote remote
 
 _connect = (CurrentTextEditor) ->
   port = atom.config.get('collaborative-edit.Port')
@@ -88,16 +16,12 @@ _connect = (CurrentTextEditor) ->
     intervalid = setInterval(
       (->
         if CurrentTextEditor.inspect().state isnt "pending"
-          LocalEditor = CurrentTextEditor.inspect().value
-          console.log Buffer
-          console.log LocalEditor
-          Buffer = LocalEditor.buffer
+          local.setEditor CurrentTextEditor.inspect().value
           clearInterval(intervalid)),
       500
     )
   else
-    LocalEditor = CurrentTextEditor
-    Buffer = LocalEditor.buffer
+    local.setEditor CurrentTextEditor
 
   interval = setInterval(
     ( ->
@@ -108,40 +32,37 @@ _connect = (CurrentTextEditor) ->
 
         share.debug = true
 
-        CurrentDocument = share.get("Sharing", docName)
+        local.setCurrentDocument share.get("Sharing", docName)
 
-        CurrentDocument.on('after op', (op, local) ->
+        doc = local.getCurrentDocument()
+
+        doc.on('after op', (op, localOp) ->
           ## only for remote operations
-          console.log local
-          console.log "op is : #{op}, Previous op is : #{PreviousOperation}"
-          if local is false
-            console.log "Remote Operation"
-            isOperationLocal = false
+          if localOp is false
+            utils.debug "Remote Operation"
             remoteUpdateDocumentContents op
         )
 
-        CurrentDocument.subscribe()
+        doc.subscribe()
 
-        CurrentDocument.whenReady( ->
-          console.log "Document is ready."
+        doc.whenReady( ->
+          utils.debug "Document is ready."
 
-          utils.setBuffer Buffer
-          console.log Buffer
-          console.log LocalEditor
+          remote.setBuffer local.getBuffer()
 
-          if (not CurrentDocument.type)
-            haveNewFile CurrentDocument
+          if (not doc.type)
+            haveNewFile doc
           else
-            GlobalContext = CurrentDocument.createContext()
-            Buffer.setTextViaDiff(CurrentDocument.getSnapshot())
+            local.setGlobalContext doc.createContext()
+            local.getBuffer().setTextViaDiff(doc.getSnapshot())
 
           setupFileHandlers()
-          _UpdateCursorPosition()
+          local._UpdateCursorPosition()
 
           clearInterval(interval)
         )
       catch error
-        console.log error
+        utils.debug error
     ),
     1000
   )
@@ -152,27 +73,27 @@ client =
       _connect(CurrentTextEditor)
 
     deactivate: ->
-      UpdateDestroy()
+      local.UpdateDestroy()
   }
 
 haveNewFile = (doc) ->
   doc.create('text')
-  text = Buffer.getText()
-  GlobalContext = doc.createContext()
-  GlobalContext.insert(0, text)
-  DocumentPosition =
-    Buffer.characterIndexForPosition(CursorPosition)
+  text = local.getBuffer().getText()
+  local.setGlobalContext(doc.createContext())
+  local.getGlobalContext().insert(0, text)
+  local.setDocumentPosition(local.getBuffer()
+    .characterIndexForPosition(local.getCursorPosition()))
 
 setupFileHandlers = ->
-  onChange.push Buffer.onDidDestroy( UpdateDestroy )
-  onChange.push LocalEditor.onDidChangeCursorPosition( UpdateCursorPosition )
-  onChange.push Buffer.on('changed', UpdateText)
+  local.addHandler(local.getBuffer().onDidDestroy( local.UpdateDestroy ))
+  local.addHandler(local.getEditor()
+    .onDidChangeCursorPosition( local.UpdateCursorPosition ))
+  local.getBuffer().on('changed', local.UpdateText) # No need to dispose this
 
 remoteUpdateDocumentContents = (op) ->
-  if not utils.isOpTheSame(op, PreviousOperation)
-    utils.HandleOp op
-  console.log 'Updating Ops'
-  PreviousOperation = op
-  utils.updateDoneRemoteOp(false)
+  if not remote.isOpTheSame(op, local.getPreviousOperation())
+    remote.HandleOp op
+  local.setPreviousOperation op
+  remote.updateDoneRemoteOp(false)
 
 module.exports = client
