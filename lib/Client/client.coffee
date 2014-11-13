@@ -58,8 +58,8 @@ _connect = (CurrentTextEditor) ->
             local.setGlobalContext doc.createContext()
             local.getBuffer().setTextViaDiff(doc.getSnapshot())
 
-          remote.startSynchronize(local.getGlobalContext())
-          
+          #remote.startSynchronize(local.getGlobalContext())
+
           setupFileHandlers()
           local._UpdateCursorPosition()
 
@@ -75,13 +75,16 @@ client =
   {
     connect: (CurrentTextEditor) ->
       _connect(CurrentTextEditor)
-      for pane in atom.workspace.getPaneItems()
-        if pane.getTitle isnt undefined
-          if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
-            CurrentPane = pane
+      setTimeout((->
+        for pane in atom.workspace.getPaneItems()
+          if pane.getTitle isnt undefined
+            if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
+              CurrentPane = pane),
+              1000
+      )
 
     deactivate: ->
-      remote.stopSynchronize()
+      #remote.stopSynchronize()
       local.UpdateDestroy()
       CurrentPane.destroy()
   }

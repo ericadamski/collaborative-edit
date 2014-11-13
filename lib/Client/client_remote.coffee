@@ -6,7 +6,7 @@ noOp    = false
 synchId = 0
 synch   = 0
 
-NO_OP_TIMEOUT = 5000 ## If no operations for 5 seconds, sync documents ##
+NO_OP_TIMEOUT = 60*1000 ## If no operations for 60 seconds, sync documents ##
 
 getTime = ->
   return (allowUnsafeEval -> Date.now())
@@ -76,7 +76,7 @@ remote =
             # {d:N} is delete N characters
             handleDeleteOp op.d
 
-      remote.updateSynch()
+      #remote.updateSynch()
       @OpIndex = 0
 
     isOpEmpty: (op) ->

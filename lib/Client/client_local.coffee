@@ -21,28 +21,31 @@ local =
       DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
 
     UpdateText: (change) ->
-      start = Buffer.characterIndexForPosition(change.newRange.start);
-      end = Buffer.characterIndexForPosition(change.newRange.end);
+      newStart = Buffer.characterIndexForPosition(change.newRange.start)
+      newEnd = Buffer.characterIndexForPosition(change.newRange.end)
+
+      oldStart = Buffer.characterIndexForPosition(change.oldRange.start);
+      oldEnd = Buffer.characterIndexForPosition(change.oldRange.end);
 
       if not remote.doneRemoteOp()
         utils.debug "Updating local text"
         if change.oldText is ""
           # just do insert
           utils.debug "Doing Insert"
-          GlobalContext.insert(start, change.newText)
+          GlobalContext.insert(oldStart, change.newText)
         else if change.newText is ""
           # just do delete
           utils.debug "Doing Delete"
-          GlobalContext.remove(start, Math.max 1, (end - start))
+          GlobalContext.remove(oldStart, change.oldText.length)
         else if (change.oldText.length > 0 and change.newText.length > 0)
           # old text is something and new text is something
           utils.debug "Doing Replace"
-          GlobalContext.remove(start, change.oldText)
-          GlobalContext.insert(start, change.newText)
+          GlobalContext.remove(oldStart, change.oldText)
+          GlobalContext.insert(oldStart, change.newText)
 
       remote.updateDoneRemoteOp(false)
       local._UpdateCursorPosition()
-      remote.updateSynch()
+      #remote.updateSynch()
 
     UpdateCursorPosition: (event) ->
       oldPos = Buffer.characterIndexForPosition(event.oldBufferPosition)
