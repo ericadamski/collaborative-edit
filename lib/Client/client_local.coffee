@@ -1,39 +1,28 @@
 utils = require '../Utils/utils'
 
-onChange = []
+onChange = [] ## A list of atom event handlers to dispose on close ##
 
-CursorPosition    = [0, 0]
-GlobalContext     = undefined
-DocumentPosition  = 0 # Char position from start of document
-Buffer            = undefined
-LocalEditor       = undefined
-CurrentDocument   = undefined
-PreviousOperation = undefined
-remote            = undefined
+CursorPosition    = [0, 0]    ## Cursor position ##
+GlobalContext     = undefined ## ShareJS editing context ##
+DocumentPosition  = 0         ## Char position from start of document ##
+Buffer            = undefined ## Atom buffer of local document ##
+LocalEditor       = undefined ## Atom TextEditor of local document ##
+CurrentDocument   = undefined ## ShareJS Document, local copy ##
+PreviousOperation = undefined ## Previously applied operation ##
+remote            = undefined ## Remote Handlers ##
 
 local =
   {
     _UpdateCursorPosition: (pos) ->
-      #only recording local position for now
       if pos is undefined
         CursorPosition = LocalEditor.getCursorBufferPosition()
       else
         CursorPosition = pos.newBufferPosition
       DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
 
-    UpdateTitle: (title) ->
-      ##  will be a little more complicated to handle
-      ## I am not sure how to do it yet
-
     UpdateText: (change) ->
-      ## use the current text editor
-      ## could use markers for this
-      ## this is local only
-
       start = Buffer.characterIndexForPosition(change.newRange.start);
       end = Buffer.characterIndexForPosition(change.newRange.end);
-
-      #delete old replace with new
 
       if not remote.doneRemoteOp()
         utils.debug "Updating local text"
@@ -53,21 +42,16 @@ local =
 
       remote.updateDoneRemoteOp(false)
       local._UpdateCursorPosition()
+      remote.updateSynch()
 
     UpdateCursorPosition: (event) ->
-      ## figure out the positioning of cursor in doc
       oldPos = Buffer.characterIndexForPosition(event.oldBufferPosition)
       newPos = Buffer.characterIndexForPosition(event.newBufferPosition)
       if ((not event.textChanged) and ( oldPos isnt newPos + 1))
         utils.debug "Doing Update becuase oldPos is : #{oldPos} and newPos is : #{newPos}"
         local._UpdateCursorPosition(event)
 
-
-    UpdateSelectionRange: ->
-      ## highlighing
-
     UpdateDestroy: ->
-      ## if the file is deleted
       for handler in onChange
         handler.dispose()
       CurrentDocument.close() if not CurrentDocument is undefined

@@ -1,6 +1,6 @@
 {allowUnsafeEval} = require 'loophole'
 sharejs = (allowUnsafeEval -> require 'share')
-remote = require './client_remote'
+remote = (allowUnsafeEval -> require './client_remote')
 local = require './client_local'
 utils = require '../Utils/utils'
 
@@ -58,6 +58,8 @@ _connect = (CurrentTextEditor) ->
             local.setGlobalContext doc.createContext()
             local.getBuffer().setTextViaDiff(doc.getSnapshot())
 
+          remote.startSynchronize(local.getGlobalContext())
+          
           setupFileHandlers()
           local._UpdateCursorPosition()
 
@@ -75,10 +77,11 @@ client =
       _connect(CurrentTextEditor)
       for pane in atom.workspace.getPaneItems()
         if pane.getTitle isnt undefined
-          if pane.getTitle() is atom.config.get('collaborative-edit:DocumentName')
+          if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
             CurrentPane = pane
 
     deactivate: ->
+      remote.stopSynchronize()
       local.UpdateDestroy()
       CurrentPane.destroy()
   }

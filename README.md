@@ -20,6 +20,7 @@ apm install collaborative-edit
 * `ServerAddress` : The address of the document hosting server. (default: 127.0.0.1)
 * `Port` : The port of the document hosting server. (default: 8080)
 * `DocumentName` : The name of the document which you want to share, creates the document in the server if it does not already exist. (default: 'untitled')
+* `Debug` : Prints some extra information to the console. (default: false)
 
 ### Key Bindings
 

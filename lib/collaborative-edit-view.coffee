@@ -11,7 +11,7 @@ edit = undefined
 startClient = (hosting) ->
   if hosting
     editor = atom.workspace.getActiveEditor()
-    atom.config.set('collaborative-edit:DocumentName', editor.getTitle())
+    atom.config.set('collaborative-edit.DocumentName', editor.getTitle())
     m_client.connect(editor)
   else
     m_client.connect()
@@ -80,13 +80,13 @@ class EditConfig extends View
     file = @miniFile.getText()
 
     if addr.length isnt 0
-      atom.config.set('collaborative-edit:ServerAddress', addr)
+      atom.config.set('collaborative-edit.ServerAddress', addr)
 
     if port.length >= 4 and port.length <= 6
-      atom.config.set('collaborative-edit:Port', port)
+      atom.config.set('collaborative-edit.Port', port)
 
     if file.length isnt 0
-      atom.config.set('collaborative-edit:DocumentName', file)
+      atom.config.set('collaborative-edit.DocumentName', file)
 
     startClient(@isHost)
 
@@ -106,10 +106,8 @@ class CollaborativeEditView extends View
     atom.workspaceView.command "collaborative-edit:Connect", => @Connect()
     atom.workspaceView.command "collaborative-edit:Disconnect", => @Disconnect()
 
-  # Returns an object that can be retrieved when package is activated
   serialize: ->
 
-  # Tear down any state and detach
   destroy: ->
     m_client.deactivate()
     m_server = undefined

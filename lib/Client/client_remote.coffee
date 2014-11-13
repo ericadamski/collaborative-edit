@@ -1,15 +1,21 @@
+{allowUnsafeEval} = require 'loophole'
 utils   = require '../Utils/utils'
 OpIndex = 0
 Buffer  = undefined
 noOp    = false
+synchId = 0
+synch   = 0
+
+NO_OP_TIMEOUT = 5000 ## If no operations for 5 seconds, sync documents ##
+
+getTime = ->
+  return (allowUnsafeEval -> Date.now())
 
 handlePositionChangeOp = (position) ->
-  #handle store next op position
   utils.debug "Editing OpIndex : #{position}"
   @OpIndex = position
 
 handleInsertOp = (string) ->
-  # Insert
   noOp = true
   utils.debug Buffer
   utils.debug @OpIndex
@@ -20,8 +26,6 @@ handleInsertOp = (string) ->
   utils.debug "Op is #{noOp}"
 
 handleDeleteOp = (toDelete) ->
-  # toDelete is a number of chars to remove,
-  # we shall have to see is forward or back
   noOp = true
   from = Buffer.positionForCharacterIndex(@OpIndex)
   to = Buffer.positionForCharacterIndex(@OpIndex + toDelete)
@@ -72,6 +76,7 @@ remote =
             # {d:N} is delete N characters
             handleDeleteOp op.d
 
+      remote.updateSynch()
       @OpIndex = 0
 
     isOpEmpty: (op) ->
@@ -144,6 +149,31 @@ remote =
     updateDoneRemoteOp: (bool) ->
       utils.debug "Updating 'doneRemoteOp' to #{bool}"
       noOp = bool
+
+    startSynchronize: (shareJsDocContext) ->
+      synch = getTime() if synch is 0
+      synchId = setInterval(
+        (-> remote.synchronize(shareJsDocContext)),
+        NO_OP_TIMEOUT
+      )
+
+    stopSynchronize: ->
+      clearInterval(synchId)
+
+    synchronize: (context) ->
+      timeNow = getTime()
+      timeDiff = timeNow - synch
+
+      if timeDiff > 5000
+        utils.debug "Synchronizing"
+        noOp = true
+        Buffer.setTextViaDiff(context.get())
+
+      synch = timeNow
+
+    updateSynch: ->
+      synch = getTime()
+
   }
 
 module.exports = remote

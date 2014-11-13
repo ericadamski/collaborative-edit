@@ -71,7 +71,7 @@ getCurrentClient = (client) ->
     if c._clientObj is client
       return c
 
-h =
+host =
   {
     host: ->
       server.listen(port, addr)
@@ -82,4 +82,4 @@ h =
       wss.close()
   }
 
-module.exports = h
+module.exports = host

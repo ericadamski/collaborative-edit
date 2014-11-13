@@ -14,6 +14,9 @@ module.exports =
     DocumentName:
       type: 'string'
       default: 'untitled'
+    Debug:
+      type: 'boolean'
+      default: true
 
   activate: ->
     @collaborativeEditView = new CollaborativeEditView()
