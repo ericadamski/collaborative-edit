@@ -1,11 +1,13 @@
 {
   "name": "collaborative-edit",
   "main": "./lib/collaborative-edit",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Allow for LAN collaborative editing of specified documents",
-  "activationEvents": ["collaborative-edit:Host",
+  "activationEvents": [
+    "collaborative-edit:Host",
     "collaborative-edit:Connect",
-    "collaborative-edit:Disconnect"],
+    "collaborative-edit:Disconnect"
+  ],
   "repository": "https://github.com/ericadamski/collaborative-edit.git",
   "license": "MIT",
   "engines": {
