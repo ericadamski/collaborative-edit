@@ -32,7 +32,7 @@ _connect = (CurrentTextEditor) ->
 
         share = new sharejs.client.Connection(ws)
 
-        share.debug = true
+        share.debug = true if atom.config.get('collaborative-edit.Debug')
 
         local.setCurrentDocument share.get("Sharing", docName)
 
