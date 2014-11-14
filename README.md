@@ -7,6 +7,9 @@ Local, simple collaborative editing.
 ```
 apm install collaborative-edit
 ```
+OR
+
+Open the Settings from within Atom, select the packages tab, search and install the package from there.
 
 ### Features
 
