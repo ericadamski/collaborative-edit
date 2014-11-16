@@ -1,55 +1,45 @@
 {allowUnsafeEval} = require 'loophole'
 utils   = require '../Utils/utils'
-OpIndex = 0
-Buffer  = undefined
-noOp    = false
-synchId = 0
-synch   = 0
 
 NO_OP_TIMEOUT = 60*1000 ## If no operations for 60 seconds, sync documents ##
+buffer = undefined
+noop = 0
 
-getTime = ->
+gettime = ->
   return (allowUnsafeEval -> Date.now())
 
-handlePositionChangeOp = (position) ->
+handlepositionchangeop = (position) ->
   utils.debug "Editing OpIndex : #{position}"
-  @OpIndex = position
+  @opindex = position
 
-handleInsertOp = (string) ->
-  noOp = true
-  utils.debug Buffer
-  utils.debug @OpIndex
-  position = Buffer.positionForCharacterIndex(@OpIndex)
-  utils.debug position
-  Buffer.insert(position, string)
-  @OpIndex += string.length
-  utils.debug "Op is #{noOp}"
+handleinsertop = (string) ->
+  @noop = true
+  position = @buffer.positionForCharacterIndex @opindex
+  @buffer.insert position, string
+  @opindex += string.length
 
-handleDeleteOp = (toDelete) ->
-  noOp = true
-  from = Buffer.positionForCharacterIndex(@OpIndex)
-  to = Buffer.positionForCharacterIndex(@OpIndex + toDelete)
-  utils.debug "Deleting from #{from} to #{to}"
-  Buffer.delete([from, to])
-  utils.debug "Op is #{noOp}"
+handledeleteop = (todelete) ->
+  @noop = true
+  from = @buffer.positionForCharacterIndex @opindex
+  to = @buffer.positionForCharacterIndex (@opindex + todelete)
+  @buffer.delete [from, to]
 
 remote =
   {
-    setOpIndex: (index) ->
-      OpIndex = index
+    setopindex: (index) ->
+      opindex = index
 
-    getOpIndex: ->
-      return OpIndex
+    getopindex: ->
+      return opindex
 
-    getBuffer: ->
-      return Buffer
+    getbuffer: ->
+      return buffer
 
-    setBuffer: (buffer) ->
-      Buffer = buffer
+    setbuffer: (buf) ->
+      buffer = buf
 
-    getOpType: (op) ->
+    getoptype: (op) ->
       type = typeof op
-      utils.debug "operation #{op} has type #{type}"
 
       switch type
         when 'object'
@@ -57,122 +47,108 @@ remote =
         else
           return type
 
-    HandleOp: (operation) ->
-      return [] if remote.isOpEmpty(operation)
-
-      utils.debug Buffer
+    handleop: (operation) ->
+      return [] if remote.isopempty operation
 
       for op in operation
-        type = remote.getOpType(op)
+        type = remote.getoptype op
 
         switch type
           when 'number'
             # '#' is position eg. op = [1531]
-            handlePositionChangeOp op
+            handlepositionchangeop op
           when 'string'
             # str is insert string
-            handleInsertOp op
+            handleinsertop op
           when 'position'
             # {d:N} is delete N characters
-            handleDeleteOp op.d
+            handledeleteop op.d
 
       #remote.updateSynch()
-      @OpIndex = 0
 
-    isOpEmpty: (op) ->
-        return true if op is undefined
-        return true if op.length is 0
-        return false
+    isopempty: (op) ->
+      return true if op is undefined
+      return true if op.length is 0
+      return false
 
-    getOpPosition: (op) ->
-      return undefined if remote.isOpEmpty op
+    getopposition: (op) ->
+      return undefined if remote.isopempty op
       if op.length > 1
-        if op[0] isnt undefined
-          return op[0]
+        return op[0]? or undefined
       return undefined
 
-    getOpData: (op) ->
-      return undefined if remote.isOpEmpty op
-      if remote.getOpPosition(op) isnt undefined
-        if op[1] isnt undefined
-          return op[1]
+    getopdata: (op) ->
+      return undefined if remote.isopempty op
+      if remote.getOpPosition(op)?
+        return op[1]? or undefined
       else
-        if op[0] isnt undefined
-          return op[0]
+        return op[0]? or undefined
       return undefined
 
-    isOpTheSame: (currentOp, prevOp) ->
-      return true if ( remote.isOpEmpty currentOp and remote.isOpEmpty prevOp )
+    isopthesame: (currentop, prevop) ->
+      return true if ( remote.isopempty currentop and remote.isopempty prevop )
 
-      _areDeleteOps = (remote.isDeleteOp(currentOp) and remote.isDeleteOp(prevOp))
+      _aredeleteops = ( remote.isdeleteop currentop and remote.isdeleteop prevop )
 
-      crOpData = remote.getOpData currentOp
-      crOpPos = remote.getOpPosition currentOp
+      cropdata = remote.getdpdata currentop
+      croppos = remote.getopposition currentop
 
-      prevOpData = remote.getOpData prevOp
-      prevOpPos = remote.getOpPosition prevOp
+      prevopdata = remote.getopdata prevop
+      prevoppos = remote.getOpPosition prevop
 
-      utils.debug "Checking to see if operations are the same."
-      utils.debug "currentOp Position : #{crOpPos} prevOp Position : #{prevOpPos}
-                   currentOp Data : #{crOpData} prevOp Data : #{prevOpData}"
-
-      if not _areDeleteOps
-        return true if ( (crOpData is prevOpData) and (crOpPos is prevOpPos) )
-      else if _areDeleteOps
-        return true if ( (crOpData.d is prevOpData.d) and
-          (crOpPos is prevOpPos) )
+      if not _aredeleteops
+        return true if ( (cropdata is prevopdata) and (croppos is prevoppos) )
+      else if _aredeleteops
+        return true if ( (cropdata.d is prevopdata.d) and
+          (croppos is prevoppos) )
 
       return false
 
-    isDeleteOp: (op) ->
-      return false if remote.isOpEmpty op
+    isdeleteop: (op) ->
+      return false if remote.isopempty op
 
       if op.length is 1
-        utils.debug op[0].d
-        return true if op[0].d isnt undefined
+        return true if op[0].d?
       else
-        utils.debug op[1].d
-        return true if op[1].d isnt undefined
+        return true if op[1].d?
 
       return false
 
-    getDeleteOpLength: (op) ->
-      if remote.isDeleteOp op
+    getdeleteoplength: (op) ->
+      if remote.isdeleteop op
         if op.length is 1
-          return op[0].d if op[0].d isnt undefined
+          return op[0].d? or undefined
         else
-          return op[1].d if op[1].d isnt undefined
+          return op[1].d? or undefined
 
-    doneRemoteOp: ->
-      return noOp
+    doneremoteop: ->
+      return noop
 
-    updateDoneRemoteOp: (bool) ->
-      utils.debug "Updating 'doneRemoteOp' to #{bool}"
-      noOp = bool
+    updatedoneremoteop: (bool) ->
+      noop = bool
 
-    startSynchronize: (shareJsDocContext) ->
-      synch = getTime() if synch is 0
-      synchId = setInterval(
-        (-> remote.synchronize(shareJsDocContext)),
+    startsynchronize: (sharejsdoccontext) ->
+      remote.synch = getTime() if synch is 0
+      remote.synchid = setInterval(
+        (-> remote.synchronize(sharejsdoccontext)),
         NO_OP_TIMEOUT
       )
 
-    stopSynchronize: ->
-      clearInterval(synchId)
+    stopsynchronize: ->
+      clearInterval(remote.synchid)
 
     synchronize: (context) ->
-      timeNow = getTime()
-      timeDiff = timeNow - synch
+      timenow = gettime()
+      timediff = timenow - @synch
 
-      if timeDiff > 5000
-        utils.debug "Synchronizing"
-        noOp = true
-        Buffer.setTextViaDiff(context.get())
+      if timediff > 5000
+        noop = true
+        buffer.setTextViaDiff context.get()
 
-      synch = timeNow
+      remote.synch = timenow
 
-    updateSynch: ->
-      synch = getTime()
+    updatesynch: ->
+      remote.synch = gettime()
 
   }
 

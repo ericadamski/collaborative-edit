@@ -6,9 +6,7 @@ livedb = allowUnsafeEval -> require 'livedb'
 http = require 'http'
 utils = require '../Utils/utils'
 
-clientAddresses = []
-
-clientNumber = 0
+connectionlist = []
 
 app = connect()
 
@@ -20,6 +18,10 @@ server = http.createServer app
 
 WebSocketServer = require('ws').Server
 wss = new WebSocketServer {server}
+
+wss.getclients = ->
+  return this.clients
+
 wss.on 'connection', (client) ->
   utils.debug client
   stream = new Duplex objectMode:yes
@@ -31,21 +33,41 @@ wss.on 'connection', (client) ->
 
   stream.headers = client.upgradeReq.headers
   stream.remoteAddress = client.upgradeReq.connection.remoteAddress
-  clientAddresses.push {"id": ++clientNumber, "address": stream.remoteAddress, "_clientObj": client}
 
-  utils.debug clientAddresses
+  remoteaddress = stream.remoteAddress
+
+  switch connectionlist.length
+    when 0
+      connectionlist.push client
+    when 1
+      tmpaddr = connectionlist[0].upgradeReq.connection.remoteAddress
+      if remoteaddress is tmpaddr
+        connectionlist[0].cursorclient = client
+        connectionlist = []
+    else
+      for c in connetionlist
+        tmpaddr = c.upgradeReq.connection.remoteAddress
+        if remoteaddress is tmpaddr
+          c.cursorclient = c
+          connectionlist.splice connectionlist.indexOf(c , 1)
+          break
 
   client.on 'message', (data) ->
-    stream.push JSON.parse data
+    jsondata = JSON.parse data
+    if jsondata.cursorposition is undefined
+      stream.push jsondata
+    else
+      if typeof jsondata.cursorposition is 'number'
+        console.log "Setting mouse position"
+        id = wss.getclients().indexOf getparentclient client
+        client.cursorposition = "{\"id\": #{id}, \"position\": #{jsondata.cursorposition}}"
+        handlecursorpositionchange client
 
   stream.on 'error', (msg) ->
     utils.debug msg
     client.close msg
 
   client.on 'close', (reason) ->
-    toRemove = getCurrentClient(client)
-    if toRemove isnt undefined
-      clientAddresses.splice(toRemove.id - 1, 1, toRemove)
     utils.debug reason
     stream.push null
     stream.emit 'close'
@@ -64,12 +86,19 @@ if port is undefined
   port = 8080
 
 if addr is undefined
-  addr = 'localhost'
+  addr is 'localhost'
 
-getCurrentClient = (client) ->
-  for c in clientAddresses
-    if c._clientObj is client
+getparentclient = (client) ->
+  for c in wss.getclients()
+    if c.cursorclient is client
       return c
+
+handlecursorpositionchange = (client) ->
+  position = client.cursorposition
+  parent = getparentclient client
+  for c in wss.getclients()
+    if c isnt client
+      c.cursorclient?.send position
 
 host =
   {

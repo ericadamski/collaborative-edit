@@ -4,45 +4,41 @@ remote = (allowUnsafeEval -> require './client_remote')
 local = require './client_local'
 utils = require '../Utils/utils'
 
-CurrentPane = undefined
+local.setremote remote
 
-local.setRemote remote
+_connect = (currenttexteditor) ->
+  port = atom.config.get 'collaborative-edit.Port'
+  addr = atom.config.get 'collaborative-edit.ServerAddress'
+  docname = atom.config.get 'collaborative-edit.DocumentName'
 
-_connect = (CurrentTextEditor) ->
-  port = atom.config.get('collaborative-edit.Port')
-  addr = atom.config.get('collaborative-edit.ServerAddress')
-  docName = atom.config.get('collaborative-edit.DocumentName')
-
-  if ( not CurrentTextEditor )
-    CurrentTextEditor = atom.workspace.open(docName)
+  if not currenttexteditor
+    currenttexteditor = atom.workspace.open docname
     intervalid = setInterval(
       (->
-        if CurrentTextEditor.inspect().state isnt "pending"
-          local.setEditor CurrentTextEditor.inspect().value
+        if currenttexteditor.inspect().state isnt "pending"
+          local.seteditor currenttexteditor.inspect().value
           clearInterval(intervalid)),
       500
     )
   else
-    local.setEditor CurrentTextEditor
+    local.seteditor currenttexteditor
 
   interval = setInterval(
     ( ->
       try
         ws = new WebSocket("ws://#{addr}:#{port}")
+        local.setsocket new WebSocket("ws://#{addr}:#{port}")
 
         share = new sharejs.client.Connection(ws)
 
-        share.debug = true if atom.config.get('collaborative-edit.Debug')
+        share.debug = atom.config.get 'collaborative-edit.Debug'
 
-        local.setCurrentDocument share.get("Sharing", docName)
+        local.setcurrentdocument doc = share.get("Sharing", docname)
 
-        doc = local.getCurrentDocument()
-
-        doc.on('after op', (op, localOp) ->
+        doc.on('after op', (op, localop) ->
           ## only for remote operations
-          if localOp is false
-            utils.debug "Remote Operation"
-            remoteUpdateDocumentContents op
+          if not localop
+            remoteupdatedocumentcontents op
         )
 
         doc.subscribe()
@@ -50,18 +46,21 @@ _connect = (CurrentTextEditor) ->
         doc.whenReady( ->
           utils.debug "Document is ready."
 
-          remote.setBuffer local.getBuffer()
+          local.getsocket().onmessage = (msg) ->
+            local.updateremotecursors msg
+
+          remote.setbuffer local.getbuffer()
 
           if (not doc.type)
-            haveNewFile doc
+            havenewfile doc
           else
-            local.setGlobalContext doc.createContext()
-            local.getBuffer().setTextViaDiff(doc.getSnapshot())
+            local.setglobalcontext doc.createContext()
+            local.getbuffer().setTextViaDiff doc.getSnapshot()
 
           #remote.startSynchronize(local.getGlobalContext())
 
-          setupFileHandlers()
-          local._UpdateCursorPosition()
+          setupfilehandlers()
+          local._updatecursorposition()
 
           clearInterval(interval)
         )
@@ -73,40 +72,38 @@ _connect = (CurrentTextEditor) ->
 
 client =
   {
-    connect: (CurrentTextEditor) ->
-      _connect(CurrentTextEditor)
+    connect: (currenttexteditor) ->
+      _connect currenttexteditor
       setTimeout((->
         for pane in atom.workspace.getPaneItems()
-          if pane.getTitle isnt undefined
+          if pane.getTitle?
             if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
-              CurrentPane = pane),
+              @currentpane = pane),
               1000
       )
 
     deactivate: ->
       #remote.stopSynchronize()
-      local.UpdateDestroy()
-      CurrentPane.destroy()
+      local.updatedestroy()
+      @currentpane.destroy()
   }
 
-haveNewFile = (doc) ->
+havenewfile = (doc) ->
   doc.create('text')
-  text = local.getBuffer().getText()
-  local.setGlobalContext(doc.createContext())
-  local.getGlobalContext().insert(0, text)
-  local.setDocumentPosition(local.getBuffer()
-    .characterIndexForPosition(local.getCursorPosition()))
+  text = local.getbuffer().getText()
+  local.setglobalcontext(doc.createContext())
+  local.getglobalcontext().insert(0, text)
+  local.setdocumentposition(local.getbuffer().characterIndexForPosition(local.getcursorposition()))
 
-setupFileHandlers = ->
-  local.addHandler(local.getBuffer().onDidDestroy( local.UpdateDestroy ))
-  local.addHandler(local.getEditor()
-    .onDidChangeCursorPosition( local.UpdateCursorPosition ))
-  local.getBuffer().on('changed', local.UpdateText) # No need to dispose this
+setupfilehandlers = ->
+  local.addhandler(local.getbuffer().onDidDestroy(local.updatedestroy))
+  local.addhandler(local.geteditor().onDidChangeCursorPosition(local.updatecursorposition))
+  local.getbuffer().on 'changed', local.updatetext # No need to dispose this
 
-remoteUpdateDocumentContents = (op) ->
-  if not remote.isOpTheSame(op, local.getPreviousOperation())
-    remote.HandleOp op
-  local.setPreviousOperation op
-  remote.updateDoneRemoteOp(false)
+remoteupdatedocumentcontents = (op) ->
+  if not remote.isopthesame op, local.getpreviousoperation()
+    remote.handleop op
+  local.setpreviousoperation op
+  remote.updatedoneremoteop false
 
 module.exports = client
