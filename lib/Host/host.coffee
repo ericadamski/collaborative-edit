@@ -58,7 +58,7 @@ wss.on 'connection', (client) ->
       stream.push jsondata
     else
       if typeof jsondata.cursorposition is 'number'
-        console.log "Setting mouse position"
+        utils.debug "Setting mouse position"
         id = wss.getclients().indexOf getparentclient client
         client.cursorposition = "{\"id\": #{id}, \"position\": #{jsondata.cursorposition}}"
         handlecursorpositionchange client
