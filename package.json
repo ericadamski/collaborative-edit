@@ -1,7 +1,7 @@
 {
   "name": "collaborative-edit",
   "main": "./lib/collaborative-edit",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "Allow for LAN collaborative editing of specified documents",
   "activationEvents": [
     "collaborative-edit:Host",
