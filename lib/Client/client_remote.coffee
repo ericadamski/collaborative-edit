@@ -23,7 +23,7 @@ handledeleteop = (todelete) ->
   noop = true
   from = buffer.positionForCharacterIndex @opindex
   to = buffer.positionForCharacterIndex(@opindex + todelete)
-  buffer.delete [from, to]
+  buffer.delete([from, to])
 
 remote =
   {
