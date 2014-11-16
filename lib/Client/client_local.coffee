@@ -40,6 +40,8 @@ local =
       oldstart = local.buffer.characterIndexForPosition change.oldRange.start
       oldend = local.buffer.characterIndexForPosition change.oldRange.end
 
+      console.log local.remote.doneremoteop()
+
       if not local.remote.doneremoteop()
         utils.debug "Updating local text"
         if change.oldText is ""

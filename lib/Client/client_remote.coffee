@@ -13,16 +13,16 @@ handlepositionchangeop = (position) ->
   @opindex = position
 
 handleinsertop = (string) ->
-  @noop = true
-  position = @buffer.positionForCharacterIndex @opindex
-  @buffer.insert position, string
+  noop = true
+  position = buffer.positionForCharacterIndex @opindex
+  buffer.insert(position, string)
   @opindex += string.length
 
 handledeleteop = (todelete) ->
-  @noop = true
-  from = @buffer.positionForCharacterIndex @opindex
-  to = @buffer.positionForCharacterIndex (@opindex + todelete)
-  @buffer.delete [from, to]
+  noop = true
+  from = buffer.positionForCharacterIndex @opindex
+  to = buffer.positionForCharacterIndex(@opindex + todelete)
+  buffer.delete [from, to]
 
 remote =
   {
@@ -74,15 +74,15 @@ remote =
     getopposition: (op) ->
       return undefined if remote.isopempty op
       if op.length > 1
-        return op[0]? or undefined
+        return op[0] if op[0] isnt undefined
       return undefined
 
     getopdata: (op) ->
       return undefined if remote.isopempty op
-      if remote.getOpPosition(op)?
-        return op[1]? or undefined
+      if remote.getopposition(op) isnt undefined
+        return op[1] if op[1] isnt undefined
       else
-        return op[0]? or undefined
+        return op[0] if op[0] isnt undefined
       return undefined
 
     isopthesame: (currentop, prevop) ->
@@ -90,11 +90,11 @@ remote =
 
       _aredeleteops = ( remote.isdeleteop currentop and remote.isdeleteop prevop )
 
-      cropdata = remote.getdpdata currentop
+      cropdata = remote.getopdata currentop
       croppos = remote.getopposition currentop
 
       prevopdata = remote.getopdata prevop
-      prevoppos = remote.getOpPosition prevop
+      prevoppos = remote.getopposition prevop
 
       if not _aredeleteops
         return true if ( (cropdata is prevopdata) and (croppos is prevoppos) )
@@ -108,18 +108,20 @@ remote =
       return false if remote.isopempty op
 
       if op.length is 1
-        return true if op[0].d?
+        if op[0] isnt undefined
+          return true if op[0].d isnt undefined
       else
-        return true if op[1].d?
+        if op[1] isnt undefined
+          return true if op[1].d isnt undefined
 
       return false
 
     getdeleteoplength: (op) ->
       if remote.isdeleteop op
         if op.length is 1
-          return op[0].d? or undefined
+          return op[0].d
         else
-          return op[1].d? or undefined
+          return op[1].d
 
     doneremoteop: ->
       return noop
