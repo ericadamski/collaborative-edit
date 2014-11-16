@@ -11,6 +11,6 @@
 * Removed a missed debugging statement
 * Removed `node_modules` from repo to conform to conventions
 
-## 0.2.4
+## 0.2.5
 * There is a known bug that you cannont have a client and host within the same Atom window
 * If you are getting weird results from running the host and client, reload both windows and try again, this will usually resolve the issue for the time being. I will try and understand why this is happening and fix it as soon as I can
