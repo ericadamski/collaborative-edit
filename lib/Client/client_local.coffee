@@ -1,4 +1,5 @@
 utils = require '../Utils/utils'
+less = require 'less'
 
 changehandlers = [] ## A list of atom event handlers to dispose on close ##
 cursorposition = [0, 0]
@@ -18,10 +19,14 @@ local =
       tmpcursor = getremotecursorposition data.id
       if tmpcursor is undefined
         #create new cursor assign it to data.cursor
+        data.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), {type: 'gutter', class: 'marker'})
+        data.properties = data.marker.getProperties()
         cursorlist.push data
       else
         #update data.cursor
+        tmpcursor.marker.getMarker().destroy()
         tmpcursor.position = data.position
+        tmpcursor.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), tmpcursor.properties)
 
       console.log cursorlist
 
@@ -131,5 +136,8 @@ getremotecursorposition = (id) ->
       if positions.id is id
         return positions
   return undefined
+
+getrandomcursorcolor = ->
+  return '#' + Math.random().toString(16).substr(-6);
 
 module.exports = local
