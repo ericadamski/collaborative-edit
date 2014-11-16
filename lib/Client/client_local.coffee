@@ -1,116 +1,135 @@
 utils = require '../Utils/utils'
 
-onChange = [] ## A list of atom event handlers to dispose on close ##
-
-CursorPosition    = [0, 0]    ## Cursor position ##
-GlobalContext     = undefined ## ShareJS editing context ##
-DocumentPosition  = 0         ## Char position from start of document ##
-Buffer            = undefined ## Atom buffer of local document ##
-LocalEditor       = undefined ## Atom TextEditor of local document ##
-CurrentDocument   = undefined ## ShareJS Document, local copy ##
-PreviousOperation = undefined ## Previously applied operation ##
-remote            = undefined ## Remote Handlers ##
+changehandlers = [] ## A list of atom event handlers to dispose on close ##
+cursorposition = [0, 0]
+cursorlist     = []
 
 local =
   {
-    _UpdateCursorPosition: (pos) ->
-      if pos is undefined
-        CursorPosition = LocalEditor.getCursorBufferPosition()
+    sendcursorposition: (pos) ->
+      local.socket.send("{\"cursorposition\": #{pos}}") if local.socket.readyState is WebSocket.OPEN
+
+    updateremotecursors: (msg) ->
+      data = JSON.parse msg.data
+
+      if typeof data.id is 'string'
+        return
+
+      tmpcursor = getremotecursorposition data.id
+      if tmpcursor is undefined
+        #create new cursor assign it to data.cursor
+        cursorlist.push data
       else
-        CursorPosition = pos.newBufferPosition
-      DocumentPosition = Buffer.characterIndexForPosition(CursorPosition)
+        #update data.cursor
+        tmpcursor.position = data.position
 
-    UpdateText: (change) ->
-      newStart = Buffer.characterIndexForPosition(change.newRange.start)
-      newEnd = Buffer.characterIndexForPosition(change.newRange.end)
+      console.log cursorlist
 
-      oldStart = Buffer.characterIndexForPosition(change.oldRange.start);
-      oldEnd = Buffer.characterIndexForPosition(change.oldRange.end);
+    _updatecursorposition: (position) ->
+      if position is undefined
+        cursorposition = local.localeditor.getCursorBufferPosition()
+      else
+        cursorposition = position.newBufferPosition
+      local.documentposition = local.buffer.characterIndexForPosition cursorposition
+      local.sendcursorposition local.documentposition
 
-      if not remote.doneRemoteOp()
+    updatetext: (change) ->
+      newstart = local.buffer.characterIndexForPosition change.newRange.start
+      newend = local.buffer.characterIndexForPosition change.newRange.end
+
+      oldstart = local.buffer.characterIndexForPosition change.oldRange.start
+      oldend = local.buffer.characterIndexForPosition change.oldRange.end
+
+      if not local.remote.doneremoteop()
         utils.debug "Updating local text"
         if change.oldText is ""
           # just do insert
           utils.debug "Doing Insert"
-          GlobalContext.insert(oldStart, change.newText)
+          local.globalcontext.insert oldstart, change.newText
         else if change.newText is ""
           # just do delete
           utils.debug "Doing Delete"
-          GlobalContext.remove(oldStart, change.oldText.length)
+          local.globalcontext.remove oldstart, change.oldText.length
         else if (change.oldText.length > 0 and change.newText.length > 0)
           # old text is something and new text is something
           utils.debug "Doing Replace"
-          GlobalContext.remove(oldStart, change.oldText)
-          GlobalContext.insert(oldStart, change.newText)
+          local.globalcontext.remove oldstart, change.oldText.length
+          local.globalcontext.insert oldstart, change.newText
 
-      remote.updateDoneRemoteOp(false)
-      local._UpdateCursorPosition()
+      local.remote.updatedoneremoteop false
+      local._updatecursorposition()
       #remote.updateSynch()
 
-    UpdateCursorPosition: (event) ->
-      oldPos = Buffer.characterIndexForPosition(event.oldBufferPosition)
-      newPos = Buffer.characterIndexForPosition(event.newBufferPosition)
-      if ((not event.textChanged) and ( oldPos isnt newPos + 1))
-        utils.debug "Doing Update becuase oldPos is : #{oldPos} and newPos is : #{newPos}"
-        local._UpdateCursorPosition(event)
+    updatecursorposition: (event) ->
+      oldposition = local.buffer.characterIndexForPosition event.oldBufferPosition
+      newposition = local.buffer.characterIndexForPosition event.newBufferPosition
+      if ((not event.textChanged) and ( oldposition isnt newposition + 1))
+        utils.debug "Doing Update becuase oldPos is : #{oldposition} and newPos is : #{newposition}"
+        local._updatecursorposition event
 
-    UpdateDestroy: ->
-      for handler in onChange
+    updatedestroy: ->
+      for handler in changehandlers
         handler.dispose()
-      CurrentDocument.close() if not CurrentDocument is undefined
-
-    setEditor: (editor) ->
+      local.currentdocument?.close()
+    seteditor: (editor) ->
       utils.debug "Setting Editor and Buffer locally."
-      LocalEditor = editor
-      Buffer = LocalEditor.buffer
-      utils.debug "\tBuffer : #{Buffer}"
-      utils.debug "\tEditor : #{LocalEditor}"
+      local.localeditor = editor
+      local.buffer = local.localeditor.buffer
 
-    getEditor: ->
-      return LocalEditor
+    geteditor: ->
+      return local.localeditor
 
-    setCurrentDocument: (doc) ->
+    setcurrentdocument: (doc) ->
       utils.debug "Setting Document : #{doc}"
-      CurrentDocument = doc
+      local.currentdocument = doc
 
-    getCurrentDocument: ->
-      return CurrentDocument
+    getcurrentdocument: ->
+      return local.currentdocument
 
-    getBuffer: ->
-      return Buffer
+    getbuffer: ->
+      return local.buffer
 
-    setGlobalContext: (context) ->
+    setglobalcontext: (context) ->
       utils.debug "Setting local context : #{context}"
-      GlobalContext = context
+      local.globalcontext = context
 
-    getGlobalContext: ->
-      utils.debug "Returning Context :"
-      utils.debug GlobalContext
-      return GlobalContext
+    getglobalcontext: ->
+      return local.globalcontext
 
-    setPreviousOperation: (op) ->
-      utils.debug "Setting Previous Op : #{op}"
-      PreviousOperation = op
+    setpreviousoperation: (operation) ->
+      utils.debug "Setting Previous Op : #{operation}"
+      local.previousoperation = operation
 
-    getPreviousOperation: ->
-      return PreviousOperation
+    getpreviousoperation: ->
+      return local.previousoperation
 
-    getDocumentPosition: ->
-      return DocumentPosition
+    getdocumentposition: ->
+      return local.documentposition
 
-    setDocumentPosition: (pos) ->
-      utils.debug "Setting Doc Position : #{pos}"
-      DocumentPosition = pos
+    setdocumentposition: (position) ->
+      utils.debug "Setting Doc Position : #{position}"
+      local.documentposition = position
 
-    setRemote: (r) ->
-      utils.debug "Setting remote #{r}"
-      remote = r
+    setremote: (remotehandler) ->
+      local.remote = remotehandler
 
-    getCursorPosition: () ->
-      return CursorPosition
+    getcursorposition: ->
+      return cursorposition
 
-    addHandler: (eventHandler) ->
-      onChange.push eventHandler
+    addhandler: (eventhandler) ->
+      changehandlers.push eventhandler
+
+    setsocket: (sock) ->
+      local.socket = sock
+
+    getsocket: ->
+      return local.socket
   }
+
+getremotecursorposition = (id) ->
+  for positions in cursorlist
+      if positions.id is id
+        return positions
+  return undefined
 
 module.exports = local

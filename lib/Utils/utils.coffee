@@ -1,10 +1,11 @@
 ## Easy Handle for Debugging ##
+#atom.config.get('collaborative-edit:Debug')
 utils =
   {
-    isDebug: atom.config.get('collaborative-edit:Debug')
+    isdebug: atom.config.get('collaborative-edit.Debug')
 
     debug: (str) ->
-      console.log str if utils.isDebug
+      console.log str if utils.isdebug
   }
 
 module.exports = utils
