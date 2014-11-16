@@ -24,6 +24,7 @@ wss.getclients = ->
 
 wss.on 'connection', (client) ->
   utils.debug client
+  sendallcursors client
   stream = new Duplex objectMode:yes
   stream._write = (chunk, encoding, callback) ->
     client.send JSON.stringify chunk
@@ -57,11 +58,14 @@ wss.on 'connection', (client) ->
     if jsondata.cursorposition is undefined
       stream.push jsondata
     else
+      utils.debug "Setting mouse position"
+      id = wss.getclients().indexOf getparentclient client
       if typeof jsondata.cursorposition is 'number'
-        utils.debug "Setting mouse position"
-        id = wss.getclients().indexOf getparentclient client
         client.cursorposition = "{\"id\": #{id}, \"position\": #{jsondata.cursorposition}}"
-        handlecursorpositionchange client
+      else if typeof jsondata.cursorposition is 'string'
+        client.cursorposition = "{\"id\": #{id}, \"position\": \"#{jsondata.cursorposition}\"}"
+
+      handlecursorpositionchange client
 
   stream.on 'error', (msg) ->
     utils.debug msg
@@ -88,6 +92,15 @@ if port is undefined
 if addr is undefined
   addr is 'localhost'
 
+sendallcursors = (newclient) ->
+  parent = getparentclient newclient
+
+  if parent isnt undefined
+    for c in wss.getclients()
+      if c isnt parent and c isnt newclient
+        c.cursorclient?.send c.cursorclient?.cursorposition
+
+
 getparentclient = (client) ->
   for c in wss.getclients()
     if c.cursorclient is client
@@ -97,7 +110,7 @@ handlecursorpositionchange = (client) ->
   position = client.cursorposition
   parent = getparentclient client
   for c in wss.getclients()
-    if c isnt client
+    if c isnt parent and c isnt client
       c.cursorclient?.send position
 
 host =

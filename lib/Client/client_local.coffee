@@ -112,17 +112,19 @@ local =
       if typeof data.id is 'string'
         return
 
-      tmpcursor = getremotecursorposition data.id
-      if tmpcursor is undefined
-        #create new cursor assign it to data.cursor
-        data.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), {type: 'gutter', class: getnewmarker()})
-        data.properties = data.marker.getProperties()
-        cursorlist.push data
+      localcursor = getremotecursorposition data.id
+
+      if data.position is "close"
+        deletecursor(localcursor)
       else
-        #update data.cursor
-        tmpcursor.marker.getMarker().destroy()
-        tmpcursor.position = data.position
-        tmpcursor.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), tmpcursor.properties)
+        if localcursor is undefined
+          data.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), {type: 'gutter', class: getnewmarker()})
+          data.properties = data.marker.getProperties()
+          cursorlist.push data
+        else
+          localcursor.marker.getMarker().destroy()
+          localcursor.position = data.position
+          localcursor.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), localcursor.properties)
 
     _updatecursorposition: (position) ->
       if position is undefined
@@ -172,8 +174,11 @@ local =
     updatedestroy: ->
       for handler in changehandlers
         handler.dispose()
+      for cursorlocation in cursorlist
+        cursorlocation.marker.getMarker().destroy()
+      local.socket.send("{\"cursorposition\": \"close\"}")
       local.currentdocument.destroy() if local.currentdocument isnt undefined
-      
+
     seteditor: (editor) ->
       utils.debug "Setting Editor and Buffer locally."
       local.localeditor = editor
@@ -228,6 +233,11 @@ local =
     getsocket: ->
       return local.socket
   }
+
+deletecursor = (localcursor) ->
+  index = cursorlist.indexOf localcursor
+  cursorlist.splice(index, 1)
+  localcursor.marker.getMarker().destroy()
 
 getremotecursorposition = (id) ->
   for positions in cursorlist
