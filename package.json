@@ -18,7 +18,7 @@
     "express": "4.x.x",
     "ws": "0.4.x",
     "livedb": "0.4.x",
-    "loophole": "~1",
+    "loophole": "~1.x.x",
     "connect": "3.3.2",
     "jquery": "2.x.x",
     "diff": "x"
