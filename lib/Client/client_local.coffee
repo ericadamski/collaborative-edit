@@ -124,8 +124,6 @@ local =
         tmpcursor.position = data.position
         tmpcursor.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), tmpcursor.properties)
 
-      console.log cursorlist
-
     _updatecursorposition: (position) ->
       if position is undefined
         cursorposition = local.localeditor.getCursorBufferPosition()
@@ -135,29 +133,32 @@ local =
       local.sendcursorposition local.documentposition
 
     updatetext: (change) ->
-      newstart = local.buffer.characterIndexForPosition change.newRange.start
-      newend = local.buffer.characterIndexForPosition change.newRange.end
+      newstart = local.buffer.characterIndexForPosition(change.newRange.start)
+      newend = local.buffer.characterIndexForPosition(change.newRange.end)
 
-      oldstart = local.buffer.characterIndexForPosition change.oldRange.start
-      oldend = local.buffer.characterIndexForPosition change.oldRange.end
+      oldstart = local.buffer.characterIndexForPosition(change.oldRange.start)
+      oldend = local.buffer.characterIndexForPosition(change.oldRange.end)
 
-      if not local.remote.doneremoteop()
+      utils.debug local.remote.doneremoteop()
+
+      if not local.remote.doneremoteop() and change isnt local.previouschange
+        local.previouschange = change
         utils.debug "Updating local text"
         if change.oldText is ""
           # just do insert
           utils.debug "Doing Insert"
-          local.globalcontext.insert oldstart, change.newText
+          local.globalcontext.insert(oldstart, change.newText)
         else if change.newText is ""
           # just do delete
           utils.debug "Doing Delete"
-          local.globalcontext.remove oldstart, change.oldText.length
+          local.globalcontext.remove(oldstart, change.oldText.length)
         else if (change.oldText.length > 0 and change.newText.length > 0)
           # old text is something and new text is something
           utils.debug "Doing Replace"
-          local.globalcontext.remove oldstart, change.oldText.length
-          local.globalcontext.insert oldstart, change.newText
+          local.globalcontext.remove(oldstart, change.oldText.length)
+          local.globalcontext.insert(oldstart, change.newText)
 
-      local.remote.updatedoneremoteop false
+      local.remote.updatedoneremoteop(false)
       local._updatecursorposition()
       #remote.updateSynch()
 
@@ -171,7 +172,8 @@ local =
     updatedestroy: ->
       for handler in changehandlers
         handler.dispose()
-      local.currentdocument.close()
+      local.currentdocument.destroy() if local.currentdocument isnt undefined
+      
     seteditor: (editor) ->
       utils.debug "Setting Editor and Buffer locally."
       local.localeditor = editor
