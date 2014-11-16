@@ -1,5 +1,8 @@
 {View, EditorView} = require 'atom'
 client = require './Client/client'
+server = undefined
+isserver = false
+view = undefined
 
 startclient = (hosting) ->
   console.log hosting
@@ -10,8 +13,8 @@ startclient = (hosting) ->
   else
     client.connect()
 
-  @view = new ShareView()
-  @view.show()
+  view = new ShareView()
+  view.show()
 
 class ShareView extends View
   @content: ->
@@ -83,9 +86,9 @@ class EditConfig extends View
       atom.config.set('collaborative-edit.DocumentName', file)
 
     if @ishost
-      @server = require './Host/host'
-      @isserver = true
-      @server.host()
+      server = require './Host/host'
+      isserver = true
+      server.host()
 
     startclient(@ishost)
 
@@ -109,9 +112,9 @@ class CollaborativeEditView extends View
 
   destroy: ->
     client.deactivate()
-    @server = undefined
-    @isserver = false
-    @view.destroy()
+    server = undefined
+    isserver = false
+    view.destroy()
     @detach()
 
   Host: ->
@@ -127,5 +130,5 @@ class CollaborativeEditView extends View
     @edit.focus()
 
   Disconnect: ->
-    @server.close() if @isserver
+    server.close() if isserver
     @destroy()

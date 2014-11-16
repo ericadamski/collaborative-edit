@@ -78,14 +78,14 @@ client =
         for pane in atom.workspace.getPaneItems()
           if pane.getTitle?
             if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
-              @currentpane = pane),
+              client.currentpane = pane),
               1000
       )
 
     deactivate: ->
       #remote.stopSynchronize()
       local.updatedestroy()
-      @currentpane.destroy()
+      client.currentpane.destroy()
   }
 
 havenewfile = (doc) ->

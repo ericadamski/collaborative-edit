@@ -32,7 +32,7 @@ remote =
 
     getopindex: ->
       return opindex
-
+      
     getbuffer: ->
       return buffer
 

@@ -34,11 +34,11 @@ local =
       local.sendcursorposition local.documentposition
 
     updatetext: (change) ->
-      newstart = local.buffer.characterIndexForPosition change.newRange.start
-      newend = local.buffer.characterIndexForPosition change.newRange.end
+      newstart = local.buffer.characterIndexForPosition(change.newRange.start)
+      newend = local.buffer.characterIndexForPosition(change.newRange.end)
 
-      oldstart = local.buffer.characterIndexForPosition change.oldRange.start
-      oldend = local.buffer.characterIndexForPosition change.oldRange.end
+      oldstart = local.buffer.characterIndexForPosition(change.oldRange.start)
+      oldend = local.buffer.characterIndexForPosition(change.oldRange.end)
 
       console.log local.remote.doneremoteop()
 
@@ -72,7 +72,7 @@ local =
     updatedestroy: ->
       for handler in changehandlers
         handler.dispose()
-      local.currentdocument.close() if local.currentdocument isnt undefined
+      local.currentdocument.destroy() if local.currentdocument isnt undefined
 
     seteditor: (editor) ->
       utils.debug "Setting Editor and Buffer locally."
