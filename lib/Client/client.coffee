@@ -98,7 +98,7 @@ havenewfile = (doc) ->
 setupfilehandlers = ->
   local.addhandler(local.getbuffer().onDidDestroy(local.updatedestroy))
   local.addhandler(local.geteditor().onDidChangeCursorPosition(local.updatecursorposition))
-  local.getbuffer().on 'changed', local.updatetext # No need to dispose this
+  local.getbuffer().on('changed', local.updatetext) # No need to dispose this
 
 remoteupdatedocumentcontents = (op) ->
   if not remote.isopthesame op, local.getpreviousoperation()

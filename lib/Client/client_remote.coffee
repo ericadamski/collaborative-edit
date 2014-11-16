@@ -3,7 +3,8 @@ utils   = require '../Utils/utils'
 
 NO_OP_TIMEOUT = 60*1000 ## If no operations for 60 seconds, sync documents ##
 buffer = undefined
-noop = 0
+noop = false
+opindex = 0
 
 gettime = ->
   return (allowUnsafeEval -> Date.now())

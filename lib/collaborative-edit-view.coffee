@@ -2,6 +2,7 @@
 client = require './Client/client'
 
 startclient = (hosting) ->
+  console.log hosting
   if hosting
     editor = atom.workspace.getActiveEditor()
     atom.config.set('collaborative-edit.DocumentName', editor.getTitle())
@@ -24,18 +25,18 @@ class ShareView extends View
     @detach()
 
 class EditConfig extends View
-  isHost: false
+  ishost: false
 
   @content: (currentfile) ->
     @div class: 'collaborative-edit overlay from-top mini', =>
       @h1 "Connection Information"
       @div class: 'block', =>
         @label "Server IP Address:"
-        @subview 'miniaddress', new EditorView(mini: true, placeholderText: 'localhost')
+        @subview 'miniaddress', new EditorView(mini: true, placeholderText: atom.config.get('collaborative-edit.ServerAddress'))
         @div class: 'message', outlet: '_address'
       @div class: 'blocl', =>
         @label "Server Port:"
-        @subview 'miniport', new EditorView(mini: true, placeholderText: '8080')
+        @subview 'miniport', new EditorView(mini: true, placeholderText: atom.config.get('collaborative-edit.Port').toString())
         @div class: 'message', outlet: '_port'
       @div class: 'block', =>
         @label "File Name:"
@@ -81,9 +82,10 @@ class EditConfig extends View
     if file.length isnt 0
       atom.config.set('collaborative-edit.DocumentName', file)
 
-    @server = require './Host/host'
-    @isserver = true
-    @server.host()
+    if @ishost
+      @server = require './Host/host'
+      @isserver = true
+      @server.host()
 
     startclient(@ishost)
 
@@ -120,6 +122,7 @@ class CollaborativeEditView extends View
 
   Connect: ->
     @edit = new EditConfig('untitled')
+    @edit.sethost(false)
     @edit.show()
     @edit.focus()
 
