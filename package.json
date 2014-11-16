@@ -21,6 +21,7 @@
     "loophole": "~1.x.x",
     "connect": "3.3.2",
     "jquery": "2.x.x",
-    "diff": "x"
+    "diff": "x",
+    "less": "x"
   }
 }
