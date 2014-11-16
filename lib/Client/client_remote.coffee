@@ -11,19 +11,19 @@ gettime = ->
 
 handlepositionchangeop = (position) ->
   utils.debug "Editing OpIndex : #{position}"
-  @opindex = position
+  opindex = position
 
 handleinsertop = (string) ->
   noop = true
   position = buffer.positionForCharacterIndex @opindex
   buffer.insert(position, string)
-  @opindex += string.length
+  opindex += string.length
 
 handledeleteop = (todelete) ->
   noop = true
-  from = buffer.positionForCharacterIndex @opindex
-  to = buffer.positionForCharacterIndex(@opindex + todelete)
-  buffer.delete [from, to]
+  from = buffer.positionForCharacterIndex opindex
+  to = buffer.positionForCharacterIndex(opindex + todelete)
+  buffer.delete([from, to])
 
 remote =
   {

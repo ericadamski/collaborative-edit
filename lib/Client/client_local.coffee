@@ -38,7 +38,10 @@ local =
       oldstart = local.buffer.characterIndexForPosition(change.oldRange.start)
       oldend = local.buffer.characterIndexForPosition(change.oldRange.end)
 
-      if not local.remote.doneremoteop()
+      utils.debug local.remote.doneremoteop()
+
+      if not local.remote.doneremoteop() and change isnt local.previouschange
+        local.previouschange = change
         utils.debug "Updating local text"
         if change.oldText is ""
           # just do insert
