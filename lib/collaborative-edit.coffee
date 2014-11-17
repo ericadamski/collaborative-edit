@@ -1,20 +1,19 @@
 CollaborativeEditView = require './collaborative-edit-view'
 
-module.exports =
-  collaborativeEditView: null
+class CollaborativeEdit
 
   config:
-    Port:
+    port:
       type: 'integer'
       default: 8080
       minimum: 8000
-    ServerAddress:
+    serverAddress:
       type: 'string'
       default: '127.0.0.1'
-    DocumentName:
+    documentName:
       type: 'string'
       default: 'untitled'
-    Debug:
+    debug:
       type: 'boolean'
       default: true
 
@@ -26,3 +25,6 @@ module.exports =
     @collaborativeEditView.destroy()
 
   serialize: ->
+    # do something
+
+module.exports = new CollaborativeEdit
