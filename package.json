@@ -4,7 +4,7 @@
   "version": "0.2.5",
   "description": "Allow for LAN collaborative editing of specified documents",
   "author": "Eric Adamski <er.adamski@gmail.com>",
-  "contributors": [],
+  "contributors": ["James Roose <james.roose@hotmail.com"],
   "activationEvents": [
     "collaborative-edit:Host",
     "collaborative-edit:Connect",
