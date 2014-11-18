@@ -50,7 +50,7 @@ wss.on 'connection', (client) ->
         tmpaddr = c.upgradeReq.connection.remoteAddress
         if remoteaddress is tmpaddr
           c.cursorclient = c
-          connectionlist.splice connectionlist.indexOf(c , 1)
+          connectionlist.splice connectionlist.indexOf(c), 1
           break
 
   client.on 'message', (data) ->
@@ -76,10 +76,17 @@ wss.on 'connection', (client) ->
     stream.push null
     stream.emit 'close'
     utils.debug 'client went away'
-    client.close reason
+    try
+      client.cursorclient?.close reason
+      client.close reason
+    catch error
+      console.log error
 
   stream.on 'end', ->
-    client.close()
+    try
+      client.close()
+    catch error
+      console.log error
 
   share.listen stream
 
@@ -98,7 +105,7 @@ sendallcursors = (newclient) ->
   if parent isnt undefined
     for c in wss.getclients()
       if c isnt parent and c isnt newclient
-        c.cursorclient?.send c.cursorclient?.cursorposition
+        send c?.cursorclient, c?.cursorclient?.cursorposition
 
 
 getparentclient = (client) ->
@@ -111,17 +118,26 @@ handlecursorpositionchange = (client) ->
   parent = getparentclient client
   for c in wss.getclients()
     if c isnt parent and c isnt client
-      c.cursorclient?.send position
+      try
+        send c?.cursorclient, position
+      catch error
+        console.log error
+
+send = (socket, msg) ->
+  socket?.send msg is socket.readyState is WebSocket.OPEN
 
 host =
   {
     host: ->
-      server.listen(port, addr)
+      console.log server.listen(port, addr)
       utils.debug "Listening on http://#{addr}:#{port}/"
 
     close: ->
       utils.debug "Closing Server"
-      wss.close()
+      try
+        wss.close()
+      catch error
+        console.log error
   }
 
 module.exports = host

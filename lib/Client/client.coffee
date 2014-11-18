@@ -1,7 +1,7 @@
 {allowUnsafeEval} = require 'loophole'
 sharejs = (allowUnsafeEval -> require 'share')
-remote = (allowUnsafeEval -> require './client_remote')
-local = require './client_local'
+remote = (allowUnsafeEval -> require './remote')
+local = require './local'
 utils = require '../Utils/utils'
 
 local.setremote remote
@@ -27,6 +27,7 @@ _connect = (currenttexteditor) ->
     ( ->
       try
         ws = new WebSocket("ws://#{addr}:#{port}")
+        setwebsocket ws
         local.setsocket new WebSocket("ws://#{addr}:#{port}")
 
         share = new sharejs.client.Connection(ws)
@@ -47,7 +48,11 @@ _connect = (currenttexteditor) ->
           utils.debug "Document is ready."
 
           local.getsocket().onmessage = (msg) ->
-            local.updateremotecursors msg
+            try
+              if this.readyState is WebSocket.OPEN
+                local.updateremotecursors msg
+            catch error
+              console.log error
 
           remote.setbuffer local.getbuffer()
 
@@ -70,23 +75,17 @@ _connect = (currenttexteditor) ->
     1000
   )
 
-client =
-  {
-    connect: (currenttexteditor) ->
-      _connect currenttexteditor
-      setTimeout((->
-        for pane in atom.workspace.getPaneItems()
-          if pane.getTitle?
-            if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
-              client.currentpane = pane),
-              1000
-      )
+  return { documentname: docname }
 
-    deactivate: ->
-      #remote.stopSynchronize()
-      local.updatedestroy()
-      client.currentpane.destroy()
-  }
+class Client
+  connect: (currenttexteditor) ->
+    info = _connect currenttexteditor
+    this.documentname = info.documentname
+    return this
+
+  deactivate: ->
+    #remote.stopSynchronize()
+    local.updatedestroy()
 
 havenewfile = (doc) ->
   doc.create('text')
@@ -96,7 +95,7 @@ havenewfile = (doc) ->
   local.setdocumentposition(local.getbuffer().characterIndexForPosition(local.getcursorposition()))
 
 setupfilehandlers = ->
-  local.addhandler(local.getbuffer().onDidDestroy(local.updatedestroy))
+  local.addhandler(local.geteditor().onDidDestroy(local.updatedestroy))
   local.addhandler(local.geteditor().onDidChangeCursorPosition(local.updatecursorposition))
   local.getbuffer().on('changed', local.updatetext) # No need to dispose this
 
@@ -106,4 +105,4 @@ remoteupdatedocumentcontents = (op) ->
   local.setpreviousoperation op
   remote.updatedoneremoteop false
 
-module.exports = client
+module.exports = () -> return new Client

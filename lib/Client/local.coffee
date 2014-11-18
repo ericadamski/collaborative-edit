@@ -104,7 +104,7 @@ MARKERS = [
 local =
   {
     sendcursorposition: (pos) ->
-      local.socket.send("{\"cursorposition\": #{pos}}") if local.socket.readyState is WebSocket.OPEN
+      local.send "{\"cursorposition\": #{pos}}"
 
     updateremotecursors: (msg) ->
       data = JSON.parse msg.data
@@ -175,9 +175,13 @@ local =
       for handler in changehandlers
         handler.dispose()
       for cursorlocation in cursorlist
-        cursorlocation.marker.getMarker().destroy()
-      local.socket.send("{\"cursorposition\": \"close\"}")
-      local.currentdocument.destroy() if local.currentdocument isnt undefined
+        cursorlocation.marker?.getMarker()?.destroy()
+      local.send "{\"cursorposition\": \"close\"}"
+      local.currentdocument?.destroy()
+      local.socket.close() if local.socket?.readyState is WebSocket.OPEN
+
+    send: (string) ->
+      local.socket.send string if local.socket?.readyState is WebSocket.OPEN
 
     seteditor: (editor) ->
       utils.debug "Setting Editor and Buffer locally."
