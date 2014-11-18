@@ -18,3 +18,4 @@
 ## 0.3.0
 * Added Cursor Colors for connected clients, not including the host
 * `Bug :` You cannot select all and delete, files will be come out of synch.
+* Fixed Bug #12

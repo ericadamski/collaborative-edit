@@ -27,7 +27,6 @@ _connect = (currenttexteditor) ->
     ( ->
       try
         ws = new WebSocket("ws://#{addr}:#{port}")
-        setwebsocket ws
         local.setsocket new WebSocket("ws://#{addr}:#{port}")
 
         share = new sharejs.client.Connection(ws)
