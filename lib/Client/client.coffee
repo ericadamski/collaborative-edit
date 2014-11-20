@@ -36,10 +36,6 @@ _connect = (documentname, currenttexteditor) ->
           this.send "{\"iscursorsocket\": true, \"documentname\": \"#{local.documentname}\"}"
           this.doc = local.documentname
 
-        local.getsocket().onclose = () ->
-          if this.readyState is WebSocket.OPEN
-            this.send "{\"cursorposition\": \"close\", \"documentname\": \"#{local.documentname}\"}"
-
         share = new sharejs.client.Connection(ws)
 
         share.debug = atom.config.get 'collaborative-edit.Debug'

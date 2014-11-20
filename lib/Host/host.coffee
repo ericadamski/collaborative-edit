@@ -35,6 +35,15 @@ wss.on 'connection', (client) ->
   client.on 'message', (data) ->
     console.log data
     jsondata = JSON.parse data
+    if jsondata.a is "unsub"
+        id = wss.getclients().indexOf client
+        if client.documents?
+          for doc in client.documents
+            if doc.cursor?
+              doc.cursor.cursorposition = "{\"id\": #{id}, \"position\": \"close\"}"
+              cursorsocket = doc.cursor
+              console.log client
+              handlecursorpositionchange {_parent: client, _cursor: doc.cursor}, doc.documentname
     if jsondata.istaken isnt undefined
       if client.documents is undefined
         client.documents = []
@@ -45,13 +54,14 @@ wss.on 'connection', (client) ->
       stream.push jsondata
     else
       utils.debug "Setting mouse position"
-      id = wss.getclients().indexOf getparentclient client, jsondata.documentname
+      parent = getparentclient client, jsondata.documentname
+      id = wss.getclients().indexOf parent
       if typeof jsondata.cursorposition is 'number'
         client.cursorposition = "{\"id\": #{id}, \"position\": #{jsondata.cursorposition}}"
       else if typeof jsondata.cursorposition is 'string'
         client.cursorposition = "{\"id\": #{id}, \"position\": \"#{jsondata.cursorposition}\"}"
 
-      handlecursorpositionchange client, jsondata.documentname
+      handlecursorpositionchange {_parent: parent, _cursor: client}, jsondata.documentname
 
   stream.on 'error', (msg) ->
     utils.debug msg
@@ -61,18 +71,8 @@ wss.on 'connection', (client) ->
     utils.debug reason
     stream.push null
     utils.debug 'client went away'
-    if client.documents is undefined
-      client.close reason
-    else
-      id = wss.getclients().indexOf client
-      for doc in client.documents
-        if doc.cursor isnt undefined
-          console.log "Hello!"
-          doc.cursor.cursorposition = "{\"id\": #{id}, \"position\": \"close\"}"
-          handlecursorpositionchange doc.cursor, doc.documentname
-      setTimeout(->
-        stream.emit 'close'
-        client.close reason, 1000)
+    stream.emit 'close'
+    client.close reason
 
   stream.on 'end', ->
     try
@@ -91,31 +91,23 @@ if port is undefined
 if addr is undefined
   addr is 'localhost'
 
-sendallcursors = (newclient, documentname) ->
-  parent = getparentclient newclient
-
-  if parent isnt undefined
-    for c in wss.getclients()
-      if c isnt parent and c isnt newclient
-        send c.cursorclient, c.cursorclient.cursorposition
-
-
 getparentclient = (client, documentname) ->
+  console.log wss.getclients()
+  console.log documentname
   for c in wss.getclients()
-    if c isnt client and c.documents isnt undefined
+    if c isnt client and c.documents?
       for doc in c.documents
         if doc.documentname is documentname and doc.cursor is client
           return c
 
 
-handlecursorpositionchange = (client, documentname) ->
-  console.log client
-  position = client.cursorposition
+handlecursorpositionchange = (clients, documentname, done) ->
   for c in wss.getclients()
-    if c isnt client and c?.documents?
-      for doc in c.documents
-        if doc.documentname is documentname and doc.cursor isnt client
-          doc.cursor?.send position
+    if c?
+      if c isnt clients._parent and c isnt clients._cursor and c.documents?
+        for doc in c.documents
+          if doc.documentname is documentname
+            send doc.cursor, clients._cursor.cursorposition, done
 
 addcursor = (client, documentname) ->
   for c in wss.getclients()
@@ -124,9 +116,9 @@ addcursor = (client, documentname) ->
         if doc.documentname is documentname and not doc.cursor?
           doc.cursor = client
 
-send = (socket, msg) ->
-  console.log socket
+send = (socket, msg, done) ->
   socket?.send msg if socket?.readyState is WebSocket.OPEN
+  done() if done?
 
 host =
   {
