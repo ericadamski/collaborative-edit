@@ -19,7 +19,6 @@ module.exports =
     @collaborativeEditView = new CollaborativeEditView()
 
   deactivate: ->
-    console.log @collaborativeEditView
     @collaborativeEditView.destroy()
 
   serialize: ->

@@ -33,7 +33,6 @@ wss.on 'connection', (client) ->
   stream.remoteAddress = client.upgradeReq.connection.remoteAddress
 
   client.on 'message', (data) ->
-    console.log data
     jsondata = JSON.parse data
     if jsondata.a is "unsub"
         id = wss.getclients().indexOf client
@@ -91,8 +90,6 @@ if addr is undefined
   addr is 'localhost'
 
 getparentclient = (client, documentname) ->
-  console.log wss.getclients()
-  console.log documentname
   for c in wss.getclients()
     if c isnt client and c.documents?
       for doc in c.documents
@@ -122,7 +119,7 @@ send = (socket, msg, done) ->
 host =
   {
     host: ->
-      console.log server.listen(port, addr)
+      server.listen(port, addr)
       utils.debug "Listening on http://#{addr}:#{port}/"
 
     close: ->

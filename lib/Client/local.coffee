@@ -107,7 +107,6 @@ local =
       local.send "{\"cursorposition\": #{pos}, \"documentname\": \"#{local.socket.doc}\"}"
 
     updateremotecursors: (msg) ->
-      console.log msg
       if msg.data is ""
         return
 

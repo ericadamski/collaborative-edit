@@ -11,8 +11,6 @@ _connect = (documentname, currenttexteditor) ->
   addr = atom.config.get 'collaborative-edit.ServerAddress'
   local.documentname = documentname
 
-  console.log currenttexteditor
-
   if not currenttexteditor?
     currenttexteditor = atom.workspace.open local.documentname
     intervalid = setInterval(
@@ -109,7 +107,6 @@ getcurrentpane = ->
 
 setupfilehandlers = ->
   local.addhandler(getcurrentpane()?.onDidRemoveItem((event) ->
-    console.log event
     if event.item?.getTitle() is local.documentname
       local.updatedestroy()
   ))
