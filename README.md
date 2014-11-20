@@ -2,8 +2,8 @@
 
 Local, simple collaborative editing.
 
-|The current version only supports a single file being hosted at a time.
-|Multiple files can be hosted but there are unpredictable results.
+>The current version only supports a single file being hosted at a time.
+>Multiple files can be hosted but there are unpredictable results.
 
 ### Installation
 
@@ -12,7 +12,7 @@ apm install collaborative-edit
 ```
 OR
 
-Open the Settings from within Atom, select the packages tab, search and install the package from there.
+>Open the Settings from within Atom, select the packages tab, search and install the package from there.
 
 ### Features
 
