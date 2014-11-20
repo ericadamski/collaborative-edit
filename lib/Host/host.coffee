@@ -117,7 +117,7 @@ addcursor = (client, documentname) ->
   for c in wss.getclients()
     if c isnt client and c.documents isnt undefined
       for doc in c.documents
-        if doc.documentname is documentname
+        if doc.documentname is documentname and doc.cursor is undefined
           doc.cursor = client
 
 send = (socket, msg) ->
