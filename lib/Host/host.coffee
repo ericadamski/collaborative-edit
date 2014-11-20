@@ -24,7 +24,6 @@ wss.getclients = ->
 
 wss.on 'connection', (client) ->
   utils.debug client
-  sendallcursors client
   stream = new Duplex objectMode:yes
   stream._write = (chunk, encoding, callback) ->
     client.send JSON.stringify chunk
@@ -55,8 +54,15 @@ wss.on 'connection', (client) ->
 
   client.on 'message', (data) ->
     console.log client
+    console.log data
     jsondata = JSON.parse data
-    if jsondata.cursorposition is undefined
+    if jsondata.istaken isnt undefined
+      if client.documents is undefined
+        client.documents = []
+      client.documents.push {istaken: jsondata.istaken, documentname: jsondata.documentname}
+    else if jsondata.iscursorsocket isnt undefined
+      addcursor client, jsondata.documentname
+    else if jsondata.cursorposition is undefined
       stream.push jsondata
     else
       utils.debug "Setting mouse position"
@@ -66,7 +72,7 @@ wss.on 'connection', (client) ->
       else if typeof jsondata.cursorposition is 'string'
         client.cursorposition = "{\"id\": #{id}, \"position\": \"#{jsondata.cursorposition}\"}"
 
-      handlecursorpositionchange client
+      handlecursorpositionchange client, jsondata.documentname
 
   stream.on 'error', (msg) ->
     utils.debug msg
@@ -100,7 +106,7 @@ if port is undefined
 if addr is undefined
   addr is 'localhost'
 
-sendallcursors = (newclient) ->
+sendallcursors = (newclient, documentname) ->
   parent = getparentclient newclient
 
   if parent isnt undefined
@@ -114,7 +120,8 @@ getparentclient = (client) ->
     if c.cursorclient is client
       return c
 
-handlecursorpositionchange = (client) ->
+handlecursorpositionchange = (client, documentname) ->
+  console.log client
   position = client.cursorposition
   parent = getparentclient client
   for c in wss.getclients()
@@ -123,6 +130,13 @@ handlecursorpositionchange = (client) ->
         send c.cursorclient, position
       catch error
         console.log error
+
+addcursor = (client, documentname) ->
+  for c in wss.getclients()
+    if c isnt client and c.documents isnt undefined
+      for doc in c.documents
+        if doc.documentname is documentname
+          doc.cursor = client
 
 send = (socket, msg) ->
   console.log msg

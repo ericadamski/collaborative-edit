@@ -29,6 +29,11 @@ _connect = (currenttexteditor) ->
         ws = new WebSocket("ws://#{addr}:#{port}")
         local.setsocket new WebSocket("ws://#{addr}:#{port}")
 
+        local.getsocket().onopen = () ->
+          ws.send "{\"istaken\": true, \"documentname\": \"#{docname}\"}"
+          this.send "{\"iscursorsocket\": true, \"documentname\": \"#{docname}\"}"
+          this.doc = docname
+
         share = new sharejs.client.Connection(ws)
 
         share.debug = atom.config.get 'collaborative-edit.Debug'
@@ -47,7 +52,6 @@ _connect = (currenttexteditor) ->
           utils.debug "Document is ready."
 
           local.getsocket().onmessage = (msg) ->
-            console.log msg
             try
               if this.readyState is WebSocket.OPEN
                 local.updateremotecursors msg

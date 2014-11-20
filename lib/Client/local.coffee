@@ -104,7 +104,8 @@ MARKERS = [
 local =
   {
     sendcursorposition: (pos) ->
-      local.send "{\"cursorposition\": #{pos}}"
+      console.log local.socket
+      local.send "{\"cursorposition\": #{pos}, \"documentname\": \"#{local.socket.doc}\"}"
 
     updateremotecursors: (msg) ->
       console.log msg
