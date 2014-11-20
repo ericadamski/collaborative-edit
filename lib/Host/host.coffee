@@ -59,7 +59,6 @@ wss.on 'connection', (client) ->
     client.close msg
 
   client.on 'close', (reason) ->
-    console.log client
     utils.debug reason
     stream.push null
     stream.emit 'close'
@@ -70,8 +69,8 @@ wss.on 'connection', (client) ->
       id = wss.getclients().indexOf client
       for doc in client.documents
         if doc.cursor isnt undefined
+          console.log "Hello!"
           send doc.cursor, "{\"id\": #{id}, \"position\": \"close\"}"
-          doc.cursor.close reason
 
   stream.on 'end', ->
     try

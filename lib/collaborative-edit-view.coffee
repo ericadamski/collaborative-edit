@@ -91,6 +91,9 @@ class EditConfig extends View
       currentsession.server = require './Host/host'
       currentsession.host()
 
+    if file is ""
+      file = 'untitled'
+
     startclient file
 
     @destroy()
