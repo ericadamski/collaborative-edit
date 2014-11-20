@@ -123,7 +123,7 @@ local =
         deletecursor(localcursor)
       else
         if localcursor is undefined
-          data.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), {type: 'highlight', class: getnewmarker()})
+          data.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), {type: 'gutter', class: getnewmarker()})
           data.properties = data.marker.getProperties()
           cursorlist.push data
         else
