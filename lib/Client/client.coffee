@@ -91,7 +91,7 @@ class Client
   deactivate: ->
     #remote.stopSynchronize()
     local.updatedestroy()
-
+    
 havenewfile = (doc) ->
   doc.create('text')
   text = local.getbuffer().getText()
