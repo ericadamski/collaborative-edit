@@ -42,7 +42,6 @@ wss.on 'connection', (client) ->
             if doc.cursor?
               doc.cursor.cursorposition = "{\"id\": #{id}, \"position\": \"close\"}"
               cursorsocket = doc.cursor
-              console.log client
               handlecursorpositionchange {_parent: client, _cursor: doc.cursor}, doc.documentname
     if jsondata.istaken isnt undefined
       if client.documents is undefined
