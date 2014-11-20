@@ -102,13 +102,13 @@ havenewfile = (doc) ->
   local.setdocumentposition(local.getbuffer().characterIndexForPosition(local.getcursorposition()))
 
 getcurrentpane = ->
-    for pane in atom.workspace.getPanes()
-      for item in pane.getItems()
-        if item.getTitle() is local.documentname
-          return pane
+  for pane in atom.workspace.getPanes()
+    for item in pane.getItems()
+      if item.getTitle() is local.documentname
+        return pane
 
 setupfilehandlers = ->
-  local.addhandler(getcurrentpane().onDidRemoveItem((event) ->
+  local.addhandler(getcurrentpane()?.onDidRemoveItem((event) ->
     console.log event
     if event.item?.getTitle() is local.documentname
       local.updatedestroy()

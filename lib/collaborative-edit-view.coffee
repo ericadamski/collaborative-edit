@@ -1,5 +1,6 @@
+{allowUnsafeEval} = require 'loophole'
 {View, EditorView} = require 'atom'
-client = require './Client/client'
+client = allowUnsafeEval -> require './Client/client'
 currentsession = require './Utils/session'
 
 shareview = undefined
