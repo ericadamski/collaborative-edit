@@ -6,8 +6,6 @@ livedb = allowUnsafeEval -> require 'livedb'
 http = require 'http'
 utils = require '../Utils/utils'
 
-connectionlist = []
-
 app = connect()
 
 backend = livedb.client livedb.memory()
@@ -34,24 +32,6 @@ wss.on 'connection', (client) ->
   stream.headers = client.upgradeReq.headers
   stream.remoteAddress = client.upgradeReq.connection.remoteAddress
 
-  remoteaddress = stream.remoteAddress
-
-  switch connectionlist.length
-    when 0
-      connectionlist.push client
-    when 1
-      tmpaddr = connectionlist[0].upgradeReq.connection.remoteAddress
-      if remoteaddress is tmpaddr
-        connectionlist[0].cursorclient = client
-        connectionlist = []
-    else
-      for c in connetionlist
-        tmpaddr = c.upgradeReq.connection.remoteAddress
-        if remoteaddress is tmpaddr
-          c.cursorclient = c
-          connectionlist.splice connectionlist.indexOf(c), 1
-          break
-
   client.on 'message', (data) ->
     console.log client
     console.log data
@@ -66,7 +46,7 @@ wss.on 'connection', (client) ->
       stream.push jsondata
     else
       utils.debug "Setting mouse position"
-      id = wss.getclients().indexOf getparentclient client
+      id = wss.getclients().indexOf getparentclient client, jsondata.documentname
       if typeof jsondata.cursorposition is 'number'
         client.cursorposition = "{\"id\": #{id}, \"position\": #{jsondata.cursorposition}}"
       else if typeof jsondata.cursorposition is 'string'
@@ -83,11 +63,12 @@ wss.on 'connection', (client) ->
     stream.push null
     stream.emit 'close'
     utils.debug 'client went away'
-    try
-      client.cursorclient?.close reason
+    if client.documents is undefined
       client.close reason
-    catch error
-      console.log error
+    else
+      for doc in client.documents
+        if doc.cursor isnt undefined
+          doc.cursor.close()
 
   stream.on 'end', ->
     try
@@ -115,21 +96,22 @@ sendallcursors = (newclient, documentname) ->
         send c.cursorclient, c.cursorclient.cursorposition
 
 
-getparentclient = (client) ->
+getparentclient = (client, documentname) ->
   for c in wss.getclients()
-    if c.cursorclient is client
-      return c
+    if c isnt client and c.documents isnt undefined
+      for doc in c.documents
+        if doc.documentname is documentname and doc.cursor is client
+          return c
+
 
 handlecursorpositionchange = (client, documentname) ->
   console.log client
   position = client.cursorposition
-  parent = getparentclient client
   for c in wss.getclients()
-    if c isnt parent and c isnt client
-      try
-        send c.cursorclient, position
-      catch error
-        console.log error
+    if c isnt client and c.documents isnt undefined
+      for doc in c.documents
+        if doc.documentname is documentname
+          doc.cursor?.send position
 
 addcursor = (client, documentname) ->
   for c in wss.getclients()
@@ -141,7 +123,7 @@ addcursor = (client, documentname) ->
 send = (socket, msg) ->
   console.log msg
   console.log socket
-  socket?.send msg if socket.readyState is WebSocket.OPEN
+  socket?.send msg if socket?.readyState is WebSocket.OPEN
 
 host =
   {
