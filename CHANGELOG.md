@@ -19,5 +19,5 @@
 * Added Cursor Colors for connected clients, not including the host
 * `Bug :` #10 - You cannot select all and delete, files will be come out of synch.
 * `Bug :` #12 - You can only run a single client on a single machine
-* Fixed Bug #14 and #15
+* `Bug :` #14 and #15 are fixed.
 * Removed Document Name from Configuration
