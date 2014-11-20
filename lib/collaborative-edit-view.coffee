@@ -61,6 +61,7 @@ class EditConfig extends View
     @miniport.preempt 'textInput', (e) =>
       false unless e.originalEvent.data.match(/[0-9]/)
 
+    @minifile.setText atom.workspace.getActiveEditor().getTitle()
     @minifile.preempt 'textInput', (e) =>
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
@@ -85,8 +86,6 @@ class EditConfig extends View
       atom.config.set('collaborative-edit.Port', port)
 
     if currentsession.tohost
-      if file is ""
-        file = atom.workspace.getActiveEditor().getTitle()
       currentsession.server = require './Host/host'
       currentsession.host()
 

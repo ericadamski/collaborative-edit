@@ -11,7 +11,9 @@ _connect = (documentname, currenttexteditor) ->
   addr = atom.config.get 'collaborative-edit.ServerAddress'
   local.documentname = documentname
 
-  if not currenttexteditor
+  console.log currenttexteditor
+
+  if not currenttexteditor?
     currenttexteditor = atom.workspace.open local.documentname
     intervalid = setInterval(
       (->
@@ -82,8 +84,8 @@ _connect = (documentname, currenttexteditor) ->
   return { documentname: local.documentname }
 
 class Client
-  connect: (currenttexteditor) ->
-    info = _connect currenttexteditor
+  connect: (currentdocument, currenttexteditor) ->
+    info = _connect currentdocument, currenttexteditor
     this.documentname = info.documentname
     this.pane = getcurrentpane()
     return this
