@@ -110,10 +110,8 @@ local =
       console.log msg
       if msg.data is ""
         return
-      try
-        data = JSON.parse msg.data
-      catch error
-        console.log error
+
+      data = JSON.parse msg.data
 
       if typeof data.id is 'string'
         return

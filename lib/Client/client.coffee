@@ -47,6 +47,7 @@ _connect = (currenttexteditor) ->
           utils.debug "Document is ready."
 
           local.getsocket().onmessage = (msg) ->
+            console.log msg
             try
               if this.readyState is WebSocket.OPEN
                 local.updateremotecursors msg
