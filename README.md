@@ -2,8 +2,8 @@
 
 Local, simple collaborative editing.
 
-|The current version only supports a single file being hosted at a time.
-|Multiple files can be hosted but there are unpredictable results.
+>The current version only supports a single file being hosted at a time.
+>Multiple files can be hosted but there are unpredictable results.
 
 ### Installation
 
