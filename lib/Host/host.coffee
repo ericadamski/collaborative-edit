@@ -59,6 +59,7 @@ wss.on 'connection', (client) ->
     client.close msg
 
   client.on 'close', (reason) ->
+    console.log client
     utils.debug reason
     stream.push null
     stream.emit 'close'
@@ -110,16 +111,16 @@ handlecursorpositionchange = (client, documentname) ->
   console.log client
   position = client.cursorposition
   for c in wss.getclients()
-    if c isnt client and c.documents isnt undefined
+    if c isnt client and c?.documents?
       for doc in c.documents
         if doc.documentname is documentname and doc.cursor isnt client
           doc.cursor?.send position
 
 addcursor = (client, documentname) ->
   for c in wss.getclients()
-    if c isnt client and c.documents isnt undefined
+    if c isnt client and c.documents?
       for doc in c.documents
-        if doc.documentname is documentname and doc.cursor is undefined
+        if doc.documentname is documentname and not doc.cursor?
           doc.cursor = client
 
 send = (socket, msg) ->
