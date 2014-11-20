@@ -54,6 +54,7 @@ wss.on 'connection', (client) ->
           break
 
   client.on 'message', (data) ->
+    console.log client
     jsondata = JSON.parse data
     if jsondata.cursorposition is undefined
       stream.push jsondata
