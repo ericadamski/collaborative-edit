@@ -12,7 +12,7 @@ apm install collaborative-edit
 ```
 OR
 
-Open the Settings from within Atom, select the packages tab, search and install the package from there.
+>Open the Settings from within Atom, select the packages tab, search and install the package from there.
 
 ### Features
 
