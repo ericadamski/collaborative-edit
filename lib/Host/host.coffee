@@ -127,7 +127,7 @@ handlecursorpositionchange = (client) ->
 send = (socket, msg) ->
   console.log msg
   console.log socket
-  socket?.send msg is socket.readyState is WebSocket.OPEN
+  socket?.send msg if socket.readyState is WebSocket.OPEN
 
 host =
   {
