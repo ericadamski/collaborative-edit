@@ -107,6 +107,8 @@ local =
       local.send "{\"cursorposition\": #{pos}}"
 
     updateremotecursors: (msg) ->
+      console.log msg
+      if msg is "undefined"
       try
         data = JSON.parse msg.data
       catch error
