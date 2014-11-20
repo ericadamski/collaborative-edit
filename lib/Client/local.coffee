@@ -109,6 +109,7 @@ local =
     updateremotecursors: (msg) ->
       console.log msg
       if msg is "undefined"
+        return
       try
         data = JSON.parse msg.data
       catch error
