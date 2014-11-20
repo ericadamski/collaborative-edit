@@ -33,7 +33,6 @@ wss.on 'connection', (client) ->
   stream.remoteAddress = client.upgradeReq.connection.remoteAddress
 
   client.on 'message', (data) ->
-    console.log client
     console.log data
     jsondata = JSON.parse data
     if jsondata.istaken isnt undefined
@@ -61,7 +60,6 @@ wss.on 'connection', (client) ->
   client.on 'close', (reason) ->
     utils.debug reason
     stream.push null
-    stream.emit 'close'
     utils.debug 'client went away'
     if client.documents is undefined
       client.close reason
@@ -70,8 +68,11 @@ wss.on 'connection', (client) ->
       for doc in client.documents
         if doc.cursor isnt undefined
           console.log "Hello!"
-          send doc.cursor, "{\"id\": #{id}, \"position\": \"close\"}"
-      client.close reason
+          doc.cursor.cursorposition = "{\"id\": #{id}, \"position\": \"close\"}"
+          handlecursorpositionchange doc.cursor, doc.documentname
+      setTimeout(->
+        stream.emit 'close'
+        client.close reason, 1000)
 
   stream.on 'end', ->
     try
@@ -124,6 +125,7 @@ addcursor = (client, documentname) ->
           doc.cursor = client
 
 send = (socket, msg) ->
+  console.log socket
   socket?.send msg if socket?.readyState is WebSocket.OPEN
 
 host =
