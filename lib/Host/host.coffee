@@ -105,7 +105,7 @@ sendallcursors = (newclient) ->
   if parent isnt undefined
     for c in wss.getclients()
       if c isnt parent and c isnt newclient
-        send c?.cursorclient, c?.cursorclient?.cursorposition
+        send c.cursorclient, c.cursorclient.cursorposition
 
 
 getparentclient = (client) ->
@@ -119,7 +119,7 @@ handlecursorpositionchange = (client) ->
   for c in wss.getclients()
     if c isnt parent and c isnt client
       try
-        send c?.cursorclient, position
+        send c.cursorclient, position
       catch error
         console.log error
 
