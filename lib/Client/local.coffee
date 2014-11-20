@@ -178,7 +178,7 @@ local =
 
     updatedestroy: ->
       for handler in changehandlers
-        handler.dispose()
+        handler?.dispose()
       for cursorlocation in cursorlist
         cursorlocation.marker?.getMarker()?.destroy()
       local.send "{\"cursorposition\": \"close\"}"
