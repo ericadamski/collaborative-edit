@@ -107,7 +107,10 @@ local =
       local.send "{\"cursorposition\": #{pos}}"
 
     updateremotecursors: (msg) ->
-      data = JSON.parse msg.data
+      try
+        data = JSON.parse msg.data
+      catch error
+        console.log error
 
       if typeof data.id is 'string'
         return
