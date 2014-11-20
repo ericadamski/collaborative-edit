@@ -10,6 +10,7 @@ _connect = (currenttexteditor) ->
   port = atom.config.get 'collaborative-edit.Port'
   addr = atom.config.get 'collaborative-edit.ServerAddress'
   docname = atom.config.get 'collaborative-edit.DocumentName'
+  local.documentname = docname
 
   if not currenttexteditor
     currenttexteditor = atom.workspace.open docname
@@ -32,7 +33,7 @@ _connect = (currenttexteditor) ->
         local.getsocket().onopen = () ->
           ws.send "{\"istaken\": true, \"documentname\": \"#{docname}\"}"
           this.send "{\"iscursorsocket\": true, \"documentname\": \"#{docname}\"}"
-          this.doc = docname
+          this.doc = local.documentname
 
         share = new sharejs.client.Connection(ws)
 
