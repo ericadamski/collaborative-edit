@@ -6,14 +6,13 @@ utils = require '../Utils/utils'
 
 local.setremote remote
 
-_connect = (currenttexteditor) ->
+_connect = (documentname, currenttexteditor) ->
   port = atom.config.get 'collaborative-edit.Port'
   addr = atom.config.get 'collaborative-edit.ServerAddress'
-  docname = atom.config.get 'collaborative-edit.DocumentName'
-  local.documentname = docname
+  local.documentname = documentname
 
   if not currenttexteditor
-    currenttexteditor = atom.workspace.open docname
+    currenttexteditor = atom.workspace.open local.documentname
     intervalid = setInterval(
       (->
         if currenttexteditor.inspect().state isnt "pending"
@@ -31,15 +30,15 @@ _connect = (currenttexteditor) ->
         local.setsocket new WebSocket("ws://#{addr}:#{port}")
 
         local.getsocket().onopen = () ->
-          ws.send "{\"istaken\": true, \"documentname\": \"#{docname}\"}"
-          this.send "{\"iscursorsocket\": true, \"documentname\": \"#{docname}\"}"
+          ws.send "{\"istaken\": true, \"documentname\": \"#{local.documentname}\"}"
+          this.send "{\"iscursorsocket\": true, \"documentname\": \"#{local.documentname}\"}"
           this.doc = local.documentname
 
         share = new sharejs.client.Connection(ws)
 
         share.debug = atom.config.get 'collaborative-edit.Debug'
 
-        local.setcurrentdocument doc = share.get("Sharing", docname)
+        local.setcurrentdocument doc = share.get("Sharing", local.documentname)
 
         doc.on('after op', (op, localop) ->
           ## only for remote operations
@@ -80,18 +79,19 @@ _connect = (currenttexteditor) ->
     1000
   )
 
-  return { documentname: docname }
+  return { documentname: local.documentname }
 
 class Client
   connect: (currenttexteditor) ->
     info = _connect currenttexteditor
     this.documentname = info.documentname
+    this.pane = getcurrentpane()
     return this
 
   deactivate: ->
     #remote.stopSynchronize()
     local.updatedestroy()
-    
+
 havenewfile = (doc) ->
   doc.create('text')
   text = local.getbuffer().getText()
@@ -99,7 +99,18 @@ havenewfile = (doc) ->
   local.getglobalcontext().insert(0, text)
   local.setdocumentposition(local.getbuffer().characterIndexForPosition(local.getcursorposition()))
 
+getcurrentpane = ->
+    for pane in atom.workspace.getPanes()
+      for item in pane.getItems()
+        if item.getTitle() is local.documentname
+          return pane
+
 setupfilehandlers = ->
+  local.addhandler(getcurrentpane().onDidRemoveItem((event) ->
+    console.log event
+    if event.item?.getTitle() is local.documentname
+      local.updatedestroy()
+  ))
   local.addhandler(local.geteditor().onDidDestroy(local.updatedestroy))
   local.addhandler(local.geteditor().onDidChangeCursorPosition(local.updatecursorposition))
   local.getbuffer().on('changed', local.updatetext) # No need to dispose this

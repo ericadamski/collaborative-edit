@@ -11,9 +11,6 @@ module.exports =
     ServerAddress:
       type: 'string'
       default: '127.0.0.1'
-    DocumentName:
-      type: 'string'
-      default: 'untitled'
     Debug:
       type: 'boolean'
       default: true

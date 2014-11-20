@@ -4,13 +4,12 @@ currentsession = require './Utils/session'
 
 shareview = undefined
 
-startclient = () ->
+startclient = (documentname) ->
   if currentsession.tohost
     editor = atom.workspace.getActiveEditor()
-    atom.config.set('collaborative-edit.DocumentName', editor.getTitle())
-    currentsession.opendocument () -> return client().connect editor
+    currentsession.opendocument -> return client().connect documentname, editor
   else
-    currentsession.opendocument () -> return client().connect()
+    currentsession.opendocument -> return client().connect documentname
 
   shareview?.destroy()
   shareview = new ShareView()
@@ -21,6 +20,7 @@ getsharedfiles = () ->
   return currentsession.getallfiles()
 
 class ShareView extends View
+  activepane = undefined
   @content: ->
     @div class: 'collaborative-edit overlay from-bottom', =>
       @div "File(s) #{getsharedfiles()} are being shared", class: 'message'
@@ -61,7 +61,6 @@ class EditConfig extends View
     @miniport.preempt 'textInput', (e) =>
       false unless e.originalEvent.data.match(/[0-9]/)
 
-    @minifile.setTooltip("The DOCUMENT to host on, or connect to. Default : #{atom.config.get('collaborative-edit:DocumentName')}")
     @minifile.preempt 'textInput', (e) =>
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
@@ -85,14 +84,13 @@ class EditConfig extends View
     if port.length >= 4 and port.length <= 6
       atom.config.set('collaborative-edit.Port', port)
 
-    if file.length isnt 0
-      atom.config.set('collaborative-edit.DocumentName', file)
-
     if currentsession.tohost
+      if file is ""
+        file = atom.workspace.getActiveEditor().getTitle()
       currentsession.server = require './Host/host'
       currentsession.host()
 
-    startclient()
+    startclient file
 
     @destroy()
 
@@ -110,7 +108,7 @@ class CollaborativeEditView extends View
   serialize: ->
 
   destroy: ->
-    shareview.destroy()
+    shareview?.destroy()
     currentsession.destroy()
     @detach()
 

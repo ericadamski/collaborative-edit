@@ -68,6 +68,7 @@ wss.on 'connection', (client) ->
     else
       for doc in client.documents
         if doc.cursor isnt undefined
+          send doc.cursor, "{\"position\": \"close\"}"
           doc.cursor.close()
 
   stream.on 'end', ->
@@ -121,8 +122,6 @@ addcursor = (client, documentname) ->
           doc.cursor = client
 
 send = (socket, msg) ->
-  console.log msg
-  console.log socket
   socket?.send msg if socket?.readyState is WebSocket.OPEN
 
 host =
