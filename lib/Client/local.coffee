@@ -181,7 +181,7 @@ local =
         handler?.dispose()
       for cursorlocation in cursorlist
         cursorlocation.marker?.getMarker()?.destroy()
-      local.send "{\"position\": \"close\"}"
+      local.send "{\"cursorposition\": \"close\", \"documentname\": \"#{local.documentname}\"}"
       local.currentdocument?.destroy()
       local.socket.close() if local.socket?.readyState is WebSocket.OPEN
 

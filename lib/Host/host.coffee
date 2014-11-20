@@ -66,10 +66,11 @@ wss.on 'connection', (client) ->
     if client.documents is undefined
       client.close reason
     else
+      id = wss.getclients().indexOf client
       for doc in client.documents
         if doc.cursor isnt undefined
-          send doc.cursor, "{\"position\": \"close\"}"
-          doc.cursor.close()
+          send doc.cursor, "{\"id\": #{id}, \"position\": \"close\"}"
+          doc.cursor.close reason
 
   stream.on 'end', ->
     try
