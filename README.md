@@ -2,6 +2,9 @@
 
 Local, simple collaborative editing.
 
+>The current version only supports a single file being hosted at a time.
+>Multiple files can be hosted but there are unpredictable results.
+
 ### Installation
 
 ```
@@ -9,7 +12,7 @@ apm install collaborative-edit
 ```
 OR
 
-Open the Settings from within Atom, select the packages tab, search and install the package from there.
+>Open the Settings from within Atom, select the packages tab, search and install the package from there.
 
 ### Features
 
@@ -20,7 +23,6 @@ Open the Settings from within Atom, select the packages tab, search and install 
 
 * `ServerAddress` : The address of the document hosting server. (default: 127.0.0.1)
 * `Port` : The port of the document hosting server. (default: 8080)
-* `DocumentName` : The name of the document which you want to share, creates the document in the server if it does not already exist. (default: 'untitled')
 * `Debug` : Prints some extra information to the console. (default: false)
 
 ### Key Bindings

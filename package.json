@@ -1,7 +1,7 @@
 {
   "name": "collaborative-edit",
   "main": "./lib/collaborative-edit",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Allow for LAN collaborative editing of specified documents",
   "author": "Eric Adamski <er.adamski@gmail.com>",
   "contributors": ["James Roose <james.roose@hotmail.com"],
@@ -23,6 +23,7 @@
     "loophole": "~1.x.x",
     "connect": "3.3.2",
     "jquery": "2.x.x",
-    "diff": "x"
+    "diff": "x",
+    "less": "x"
   }
 }
