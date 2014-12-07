@@ -31,6 +31,20 @@ OR
 * `ctrl-alt-c`: Connects using the configuration parameters
 * `ctrl-alt-shift-c`: Disconnect close the shared Atom pane, and if you are hosting close the server.
 
+### Contributing
+
+>Fork the repository
+
+* OS X
+ * Open a terminal of your choice
+ * `cd` to the directory which you have 'checked out' the source
+ * do `apm link -d`
+ * Open a development window of Atom
+ * Develop away!
+  * Reload the window (`ctrl-alt-cmd-l`) for changes to take affect in the current Development Atom Window
+
+>When creating a Pull Request assign @ericadamski and/or @sieniawsky
+
 ### License
 
 MIT
