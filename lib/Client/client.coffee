@@ -6,22 +6,22 @@ utils = require '../Utils/utils'
 
 local.setremote remote
 
-_connect = (documentname, currenttexteditor) ->
+_connect = (document_name, current_text_editor) ->
   port = atom.config.get 'collaborative-edit.Port'
   addr = atom.config.get 'collaborative-edit.ServerAddress'
-  local.documentname = documentname
+  local.documentname = document_name
 
-  if not currenttexteditor?
-    currenttexteditor = atom.workspace.open local.documentname
+  if not current_text_editor?
+    current_text_editor = atom.workspace.open local.documentname
     intervalid = setInterval(
       (->
-        if currenttexteditor.inspect().state isnt "pending"
-          local.seteditor currenttexteditor.inspect().value
+        if current_text_editor.inspect().state isnt "pending"
+          local.seteditor current_text_editor.inspect().value
           clearInterval(intervalid)),
       500
     )
   else
-    local.seteditor currenttexteditor
+    local.seteditor current_text_editor
 
   interval = setInterval(
     ( ->
@@ -82,8 +82,8 @@ _connect = (documentname, currenttexteditor) ->
   return { documentname: local.documentname }
 
 class Client
-  connect: (currentdocument, currenttexteditor) ->
-    info = _connect currentdocument, currenttexteditor
+  connect: (current_document, current_text_editor) ->
+    info = _connect current_document, current_text_editor
     this.documentname = info.documentname
     this.pane = getcurrentpane()
     return this
