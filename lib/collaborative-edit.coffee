@@ -10,10 +10,7 @@ class CollaborativeEdit
     serverAddress:
       type: 'string'
       default: '127.0.0.1'
-    documentName:
-      type: 'string'
-      default: 'untitled'
-    debug:
+    Debug:
       type: 'boolean'
       default: true
 
@@ -21,7 +18,6 @@ class CollaborativeEdit
     @collaborativeEditView = new CollaborativeEditView()
 
   deactivate: ->
-    console.log @collaborativeEditView
     @collaborativeEditView.destroy()
 
   serialize: ->

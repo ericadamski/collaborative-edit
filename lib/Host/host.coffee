@@ -6,8 +6,6 @@ livedb = allowUnsafeEval -> require 'livedb'
 http = require 'http'
 utils = require '../Utils/utils'
 
-connectionlist = []
-
 app = connect()
 
 backend = livedb.client livedb.memory()
@@ -34,34 +32,34 @@ wss.on 'connection', (client) ->
   stream.headers = client.upgradeReq.headers
   stream.remoteAddress = client.upgradeReq.connection.remoteAddress
 
-  remoteaddress = stream.remoteAddress
-
-  switch connectionlist.length
-    when 0
-      connectionlist.push client
-    when 1
-      tmpaddr = connectionlist[0].upgradeReq.connection.remoteAddress
-      if remoteaddress is tmpaddr
-        connectionlist[0].cursorclient = client
-        connectionlist = []
-    else
-      for c in connetionlist
-        tmpaddr = c.upgradeReq.connection.remoteAddress
-        if remoteaddress is tmpaddr
-          c.cursorclient = c
-          connectionlist.splice connectionlist.indexOf(c , 1)
-          break
-
   client.on 'message', (data) ->
     jsondata = JSON.parse data
-    if jsondata.cursorposition is undefined
+    if jsondata.a is "unsub"
+        id = wss.getclients().indexOf client
+        if client.documents?
+          for doc in client.documents
+            if doc.cursor?
+              doc.cursor.cursorposition = "{\"id\": #{id}, \"position\": \"close\"}"
+              cursorsocket = doc.cursor
+              handlecursorpositionchange {_parent: client, _cursor: doc.cursor}, doc.documentname
+    if jsondata.istaken isnt undefined
+      if client.documents is undefined
+        client.documents = []
+      client.documents.push {istaken: jsondata.istaken, documentname: jsondata.documentname}
+    else if jsondata.iscursorsocket isnt undefined
+      addcursor client, jsondata.documentname
+    else if jsondata.cursorposition is undefined
       stream.push jsondata
     else
+      utils.debug "Setting mouse position"
+      parent = getparentclient client, jsondata.documentname
+      id = wss.getclients().indexOf parent
       if typeof jsondata.cursorposition is 'number'
-        utils.debug "Setting mouse position"
-        id = wss.getclients().indexOf getparentclient client
         client.cursorposition = "{\"id\": #{id}, \"position\": #{jsondata.cursorposition}}"
-        handlecursorpositionchange client
+      else if typeof jsondata.cursorposition is 'string'
+        client.cursorposition = "{\"id\": #{id}, \"position\": \"#{jsondata.cursorposition}\"}"
+
+      handlecursorpositionchange {_parent: parent, _cursor: client}, jsondata.documentname
 
   stream.on 'error', (msg) ->
     utils.debug msg
@@ -70,12 +68,15 @@ wss.on 'connection', (client) ->
   client.on 'close', (reason) ->
     utils.debug reason
     stream.push null
-    stream.emit 'close'
     utils.debug 'client went away'
+    stream.emit 'close'
     client.close reason
 
   stream.on 'end', ->
-    client.close()
+    try
+      client.close()
+    catch error
+      console.log error
 
   share.listen stream
 
@@ -88,17 +89,32 @@ if port is undefined
 if addr is undefined
   addr is 'localhost'
 
-getparentclient = (client) ->
+getparentclient = (client, documentname) ->
   for c in wss.getclients()
-    if c.cursorclient is client
-      return c
+    if c isnt client and c.documents?
+      for doc in c.documents
+        if doc.documentname is documentname and doc.cursor is client
+          return c
 
-handlecursorpositionchange = (client) ->
-  position = client.cursorposition
-  parent = getparentclient client
+
+handlecursorpositionchange = (clients, documentname, done) ->
   for c in wss.getclients()
-    if c isnt client
-      c.cursorclient?.send position
+    if c?
+      if c isnt clients._parent and c isnt clients._cursor and c.documents?
+        for doc in c.documents
+          if doc.documentname is documentname
+            send doc.cursor, clients._cursor.cursorposition, done
+
+addcursor = (client, documentname) ->
+  for c in wss.getclients()
+    if c isnt client and c.documents?
+      for doc in c.documents
+        if doc.documentname is documentname and not doc.cursor?
+          doc.cursor = client
+
+send = (socket, msg, done) ->
+  socket?.send msg if socket?.readyState is WebSocket.OPEN
+  done() if done?
 
 host =
   {
@@ -108,7 +124,10 @@ host =
 
     close: ->
       utils.debug "Closing Server"
-      wss.close()
+      try
+        wss.close()
+      catch error
+        console.log error
   }
 
 module.exports = host

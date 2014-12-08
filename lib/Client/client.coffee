@@ -1,18 +1,18 @@
 {allowUnsafeEval} = require 'loophole'
 sharejs = (allowUnsafeEval -> require 'share')
-remote = (allowUnsafeEval -> require './client_remote')
-local = require './client_local'
+remote = (allowUnsafeEval -> require './remote')
+local = require './local'
 utils = require '../Utils/utils'
 
 local.setremote remote
 
-_connect = (currenttexteditor) ->
+_connect = (documentname, currenttexteditor) ->
   port = atom.config.get 'collaborative-edit.Port'
   addr = atom.config.get 'collaborative-edit.ServerAddress'
-  docname = atom.config.get 'collaborative-edit.DocumentName'
+  local.documentname = documentname
 
-  if not currenttexteditor
-    currenttexteditor = atom.workspace.open docname
+  if not currenttexteditor?
+    currenttexteditor = atom.workspace.open local.documentname
     intervalid = setInterval(
       (->
         if currenttexteditor.inspect().state isnt "pending"
@@ -29,11 +29,16 @@ _connect = (currenttexteditor) ->
         ws = new WebSocket("ws://#{addr}:#{port}")
         local.setsocket new WebSocket("ws://#{addr}:#{port}")
 
+        local.getsocket().onopen = () ->
+          ws.send "{\"istaken\": true, \"documentname\": \"#{local.documentname}\"}"
+          this.send "{\"iscursorsocket\": true, \"documentname\": \"#{local.documentname}\"}"
+          this.doc = local.documentname
+
         share = new sharejs.client.Connection(ws)
 
         share.debug = atom.config.get 'collaborative-edit.Debug'
 
-        local.setcurrentdocument doc = share.get("Sharing", docname)
+        local.setcurrentdocument doc = share.get("Sharing", local.documentname)
 
         doc.on('after op', (op, localop) ->
           ## only for remote operations
@@ -47,7 +52,11 @@ _connect = (currenttexteditor) ->
           utils.debug "Document is ready."
 
           local.getsocket().onmessage = (msg) ->
-            local.updateremotecursors msg
+            try
+              if this.readyState is WebSocket.OPEN
+                local.updateremotecursors msg
+            catch error
+              console.log error
 
           remote.setbuffer local.getbuffer()
 
@@ -70,23 +79,18 @@ _connect = (currenttexteditor) ->
     1000
   )
 
-client =
-  {
-    connect: (currenttexteditor) ->
-      _connect currenttexteditor
-      setTimeout((->
-        for pane in atom.workspace.getPaneItems()
-          if pane.getTitle?
-            if pane.getTitle() is atom.config.get('collaborative-edit.DocumentName')
-              client.currentpane = pane),
-              1000
-      )
+  return { documentname: local.documentname }
 
-    deactivate: ->
-      #remote.stopSynchronize()
-      local.updatedestroy()
-      client.currentpane.destroy()
-  }
+class Client
+  connect: (currentdocument, currenttexteditor) ->
+    info = _connect currentdocument, currenttexteditor
+    this.documentname = info.documentname
+    this.pane = getcurrentpane()
+    return this
+
+  deactivate: ->
+    #remote.stopSynchronize()
+    local.updatedestroy()
 
 havenewfile = (doc) ->
   doc.create('text')
@@ -95,8 +99,18 @@ havenewfile = (doc) ->
   local.getglobalcontext().insert(0, text)
   local.setdocumentposition(local.getbuffer().characterIndexForPosition(local.getcursorposition()))
 
+getcurrentpane = ->
+  for pane in atom.workspace.getPanes()
+    for item in pane.getItems()
+      if item.getTitle() is local.documentname
+        return pane
+
 setupfilehandlers = ->
-  local.addhandler(local.getbuffer().onDidDestroy(local.updatedestroy))
+  local.addhandler(getcurrentpane()?.onDidRemoveItem((event) ->
+    if event.item?.getTitle() is local.documentname
+      local.updatedestroy()
+  ))
+  local.addhandler(local.geteditor().onDidDestroy(local.updatedestroy))
   local.addhandler(local.geteditor().onDidChangeCursorPosition(local.updatecursorposition))
   local.getbuffer().on('changed', local.updatetext) # No need to dispose this
 
@@ -106,4 +120,4 @@ remoteupdatedocumentcontents = (op) ->
   local.setpreviousoperation op
   remote.updatedoneremoteop false
 
-module.exports = client
+module.exports = () -> return new Client

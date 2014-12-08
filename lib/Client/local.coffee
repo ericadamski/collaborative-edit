@@ -1,27 +1,133 @@
 utils = require '../Utils/utils'
+less = require 'less'
 
 changehandlers = [] ## A list of atom event handlers to dispose on close ##
 cursorposition = [0, 0]
 cursorlist     = []
+usedmarkers    = []
+
+MARKERS = [
+    'AliceBlue-marker',
+    'AntiqueWhite-marker',
+    'Aqua-marker',
+    'Aquamarine-marker',
+    'Azure-marker',
+    'Blue-marker',
+    'BlueViolet-marker',
+    'CadetBlue-marker',
+    'Chartreuse-marker',
+    'Coral-marker',
+    'CornflowerBlue-marker',
+    'Crimson-marker',
+    'Cyan-marker',
+    'DarkBlue-marker',
+    'DarkCyan-marker',
+    'DarkGoldenRod-marker',
+    'DarkGreen-marker',
+    'DarkMagenta-marker',
+    'DarkOliveGreen-marker',
+    'DarkOrange-marker',
+    'DarkOrchid-marker',
+    'DarkRed-marker',
+    'DarkSeaGreen-marker',
+    'DarkSlateBlue-marker',
+    'DarkSlateGray-marker',
+    'DarkTurquoise-marker',
+    'DarkViolet-marker',
+    'DeepPink-marker',
+    'DeepSkyBlue-marker',
+    'DodgerBlue-marker',
+    'FireBrick-marker',
+    'ForestGreen-marker',
+    'Fuchsia-marker',
+    'Gainsboro-marker',
+    'Gold-marker',
+    'GoldenRod-marker',
+    'Green-marker',
+    'GreenYellow-marker',
+    'HoneyDew-marker',
+    'HotPink-marker',
+    'IndianRed-marker',
+    'Indigo-marker',
+    'Lavender-marker',
+    'LavenderBlush-marker',
+    'LawnGreen-marker',
+    'LemonChiffon-marker',
+    'LightBlue-marker',
+    'LightCoral-marker',
+    'LightGoldenRodYellow-marker',
+    'LightGreen-marker',
+    'LightPink-marker',
+    'LightSeaGreen-marker',
+    'LightSkyBlue-marker',
+    'LightSteelBlue-marker',
+    'LightYellow-marker',
+    'Lime-marker',
+    'LimeGreen-marker',
+    'Magenta-marker',
+    'MidnightBlue-marker',
+    'MistyRose-marker',
+    'Moccasin-marker',
+    'Navy-marker',
+    'Olive-marker',
+    'Orange-marker',
+    'OrangeRed-marker',
+    'Orchid-marker',
+    'PapayaWhip-marker',
+    'PeachPuff-marker',
+    'Peru-marker',
+    'Pink-marker',
+    'Plum-marker',
+    'PowderBlue-marker',
+    'Purple-marker',
+    'Red-marker',
+    'RosyBrown-marker',
+    'RoyalBlue-marker',
+    'SeaGreen-marker',
+    'SeaShell-marker',
+    'Sienna-marker',
+    'Silver-marker',
+    'SkyBlue-marker',
+    'SlateBlue-marker',
+    'SlateGray-marker',
+    'SpringGreen-marker',
+    'SteelBlue-marker',
+    'Teal-marker',
+    'Thistle-marker',
+    'Tomato-marker',
+    'Turquoise-marker',
+    'Violet-marker',
+    'Yellow-marker',
+    'YellowGreen-marker'
+  ]
 
 local =
   {
     sendcursorposition: (pos) ->
-      local.socket.send("{\"cursorposition\": #{pos}}") if local.socket.readyState is WebSocket.OPEN
+      local.send "{\"cursorposition\": #{pos}, \"documentname\": \"#{local.socket.doc}\"}"
 
     updateremotecursors: (msg) ->
+      if msg.data is ""
+        return
+
       data = JSON.parse msg.data
 
       if typeof data.id is 'string'
         return
 
-      tmpcursor = getremotecursorposition data.id
-      if tmpcursor is undefined
-        #create new cursor assign it to data.cursor
-        cursorlist.push data
+      localcursor = getremotecursorposition data.id
+
+      if data.position is "close"
+        deletecursor(localcursor)
       else
-        #update data.cursor
-        tmpcursor.position = data.position
+        if localcursor is undefined
+          data.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), {type: 'gutter', class: getnewmarker()})
+          data.properties = data.marker.getProperties()
+          cursorlist.push data
+        else
+          localcursor.marker.getMarker().destroy()
+          localcursor.position = data.position
+          localcursor.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), localcursor.properties)
 
     _updatecursorposition: (position) ->
       if position is undefined
@@ -70,8 +176,14 @@ local =
 
     updatedestroy: ->
       for handler in changehandlers
-        handler.dispose()
-      local.currentdocument.destroy() if local.currentdocument isnt undefined
+        handler?.dispose()
+      for cursorlocation in cursorlist
+        cursorlocation.marker?.getMarker()?.destroy()
+      local.currentdocument?.destroy()
+      local.socket.close() if local.socket?.readyState is WebSocket.OPEN
+
+    send: (string) ->
+      local.socket.send string if local.socket?.readyState is WebSocket.OPEN
 
     seteditor: (editor) ->
       utils.debug "Setting Editor and Buffer locally."
@@ -128,10 +240,34 @@ local =
       return local.socket
   }
 
+deletecursor = (localcursor) ->
+  index = cursorlist.indexOf localcursor
+  cursorlist.splice(index, 1)
+  localcursor.marker.getMarker().destroy()
+
 getremotecursorposition = (id) ->
   for positions in cursorlist
       if positions.id is id
         return positions
   return undefined
+
+checkismarkerused = (marker) ->
+  for markers in usedmarkers
+    if markers is marker
+      return true
+
+  return false
+
+getnewmarker = ->
+  random = Math.floor Math.random() * (MARKERS.length - 1)
+  marker = MARKERS[random]
+
+  while checkismarkerused marker
+    marker = MARKERS[Math.random(0, MARKERS.length - 1)]
+
+  usedmarkers.push marker
+
+  return marker
+
 
 module.exports = local
