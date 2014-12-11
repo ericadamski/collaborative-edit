@@ -7,7 +7,7 @@
   {
     'label': 'Packages'
     'submenu': [
-      'label': 'Collaberate'
+      'label': 'Collaborate'
       'submenu': [
         { 'label': 'Host', 'command': 'collaborative-edit:Host' }
         { 'label': 'Connect', 'command': 'collaborative-edit:Connect'}
