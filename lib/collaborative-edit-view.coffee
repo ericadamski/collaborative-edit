@@ -39,30 +39,37 @@ class EditConfig extends View
       @h1 "Connection Information"
       @div class: 'block', =>
         @label "Server IP Address:"
-        @subview 'miniaddress', new EditorView(mini: true, placeholderText: atom.config.get('collaborative-edit.ServerAddress'))
+        @subview 'miniaddress',
+          new EditorView mini: true,
+            placeholderText: atom.config.get('collaborative-edit.ServerAddress')
         @div class: 'message', outlet: '_address'
       @div class: 'blocl', =>
         @label "Server Port:"
-        @subview 'miniport', new EditorView(mini: true, placeholderText: atom.config.get('collaborative-edit.Port'))
+        @subview 'miniport',
+          new EditorView mini: true,
+            placeholderText: atom.config.get('collaborative-edit.Port')
         @div class: 'message', outlet: '_port'
       @div class: 'block', =>
         @label "File Name:"
-        @subview 'minifile', new EditorView(mini: true, placeholderText: currentfile)
+        @subview 'minifile',
+          new EditorView mini: true, placeholderText: currentfile
         @div class: 'message', outlet: '_name'
 
   initialize: ->
     @on 'core:confirm', => @confirm()
     @on 'core:cancel', => @detach()
 
-    @miniaddress.setTooltip("The ADDRESS to host on, or connect to. Default : #{atom.config.get('collaborative-edit:ServerAddress')}")
-    @miniaddress.preempt 'textInput', (e) =>
+    @miniaddress.setTooltip "The ADDRESS to host on, or connect to. Default "+
+      ": #{atom.config.get('collaborative-edit:ServerAddress')}"
+    @miniaddress.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
-    @miniport.setTooltip("The PORT to host on, or connect to. Default : #{atom.config.get('collaborative-edit:Port')}")
-    @miniport.preempt 'textInput', (e) =>
+    @miniport.setTooltip "The PORT to host on, or connect to. Default : "+
+      "#{atom.config.get('collaborative-edit:Port')}"
+    @miniport.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[0-9]/)
 
-    @minifile.preempt 'textInput', (e) =>
+    @minifile.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
   activate: ->
@@ -102,7 +109,7 @@ module.exports =
 class CollaborativeEditView extends View
   @content: ->
     @div class: 'collaborative-edit overlay from-top', =>
-      @div "The CollaborativeEdit package is Alive! It's ALIVE!", class: "message"
+      @div "The CollaborativeEdit package is Alive! It's ALIVE"
 
   initialize: (serializeState) ->
     atom.workspaceView.command "collaborative-edit:Host", => @Host()
@@ -117,7 +124,7 @@ class CollaborativeEditView extends View
     @detach()
 
   Host: ->
-    @edit = new EditConfig(atom.workspace.getActiveEditor().getTitle())
+    @edit = new EditConfig atom.workspace.getActiveEditor().getTitle()
     currentsession.tohost = true
     @edit.show()
     @edit.focus()

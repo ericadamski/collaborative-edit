@@ -7,7 +7,6 @@ module.exports =
     Port:
       type: 'integer'
       default: 8080
-      minimum: 8000
     ServerAddress:
       type: 'string'
       default: '127.0.0.1'
