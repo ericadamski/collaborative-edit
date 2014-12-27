@@ -116,7 +116,7 @@ module.exports = class CollaborativeEditView extends View
       CollaborativeEditView.currentSession.openDocument ->
         return client().connect documentName
 
-    @shareView?.destroy)()
+    @shareView?.destroy()
     @shareView = new ShareView()
     @shareView.show()
 
