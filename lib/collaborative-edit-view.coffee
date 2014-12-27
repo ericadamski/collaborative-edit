@@ -1,7 +1,8 @@
 {allowUnsafeEval} = require 'loophole'
 {View, EditorView} = require 'atom'
-client = allowUnsafeEval -> require './Client/client'
+Client = allowUnsafeEval -> require './Client/client'
 Session = require './Utils/session'
+Host = require './Host/host'
 
 shareView = undefined #maybe get rid of this? replace with @??
 
@@ -96,7 +97,7 @@ class EditConfig extends View
     if CollaborativeEditView.currentSession.toHost
       if file is ""
         file = atom.workspace.getActiveEditor().getTitle()
-      CollaborativeEditView.currentSession.server = require './Host/host'
+      CollaborativeEditView.currentSession.server = new Host()
       CollaborativeEditView.currentSession.host()
 
     if file is ""
