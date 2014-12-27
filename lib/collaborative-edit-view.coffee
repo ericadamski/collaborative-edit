@@ -4,29 +4,13 @@ Client = allowUnsafeEval -> require './Client/client'
 Session = require './Utils/session'
 Host = require './Host/host'
 
-shareView = undefined #maybe get rid of this? replace with @??
-
-startClient = (documentName) ->
-  if CollaborativeEditView.currentSession.toHost
-    editor = atom.workspace.getActiveEditor()
-    CollaborativeEditView.currentSession.openDocument ->
-      return client().connect documentName, editor
-  else
-    CollaborativeEditView.currentSession.openDocument ->
-      return client().connect documentName
-
-  shareView?.destroy()
-  shareView = new ShareView()
-  shareView.show()
-
-
-getsharedfiles = () ->
-  return CollaborativeEditView.currentSession.getAllFiles()
-
 class ShareView extends View
   @content: ->
     @div class: 'collaborative-edit overlay from-bottom', =>
       @div "File(s) #{getsharedfiles()} are being shared", class: 'message'
+
+  getsharedfiles = () ->
+    return CollaborativeEditView.currentSession.getAllFiles()
 
   show: ->
     atom.workspaceView.append(this)
@@ -100,15 +84,13 @@ class EditConfig extends View
       CollaborativeEditView.currentSession.server = new Host()
       CollaborativeEditView.currentSession.host()
 
-    if file is ""
-      file = 'untitled'
+    file = 'untitled' if file is ""
 
     startClient file
 
     @destroy()
 
-module.exports =
-class CollaborativeEditView extends View
+module.exports = class CollaborativeEditView extends View
   @content: ->
     @div class: 'collaborative-edit overlay from-top', =>
       @div "The CollaborativeEdit package is Alive! It's ALIVE"
@@ -124,6 +106,19 @@ class CollaborativeEditView extends View
     shareView?.destroy()
     @currentSession.destroy()
     @detach()
+
+  startClient = (documentName) ->
+    if CollaborativeEditView.currentSession.toHost
+      editor = atom.workspace.getActiveEditor()
+      CollaborativeEditView.currentSession.openDocument ->
+        return client().connect documentName, editor
+    else
+      CollaborativeEditView.currentSession.openDocument ->
+        return client().connect documentName
+
+    @shareView?.destroy)()
+    @shareView = new ShareView()
+    @shareView.show()
 
   Host: ->
     @currentSession = new Session()
