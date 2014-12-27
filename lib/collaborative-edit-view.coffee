@@ -1,27 +1,29 @@
 {allowUnsafeEval} = require 'loophole'
 {View, EditorView} = require 'atom'
-client = allowUnsafeEval -> require './Client/client'
-currentsession = require './Utils/session'
+Client = allowUnsafeEval -> require './Client/client'
+Session = require './Utils/session'
+Host = require './Host/host'
 
-shareview = undefined
+shareView = undefined #maybe get rid of this? replace with @??
 
-startclient = (documentname) ->
-  if currentsession.tohost
+startClient = (documentName) ->
+  if CollaborativeEditView.currentSession.toHost
     editor = atom.workspace.getActiveEditor()
-    currentsession.opendocument -> return client().connect documentname, editor
+    CollaborativeEditView.currentSession.openDocument ->
+      return client().connect documentName, editor
   else
-    currentsession.opendocument -> return client().connect documentname
+    CollaborativeEditView.currentSession.openDocument ->
+      return client().connect documentName
 
-  shareview?.destroy()
-  shareview = new ShareView()
-  shareview.show()
+  shareView?.destroy()
+  shareView = new ShareView()
+  shareView.show()
 
 
 getsharedfiles = () ->
-  return currentsession.getallfiles()
+  return CollaborativeEditView.currentSession.getAllFiles()
 
 class ShareView extends View
-  activepane = undefined
   @content: ->
     @div class: 'collaborative-edit overlay from-bottom', =>
       @div "File(s) #{getsharedfiles()} are being shared", class: 'message'
@@ -39,30 +41,37 @@ class EditConfig extends View
       @h1 "Connection Information"
       @div class: 'block', =>
         @label "Server IP Address:"
-        @subview 'miniaddress', new EditorView(mini: true, placeholderText: atom.config.get('collaborative-edit.ServerAddress'))
+        @subview 'miniAddress',
+          new EditorView mini: true,
+            placeholderText: atom.config.get('collaborative-edit.ServerAddress')
         @div class: 'message', outlet: '_address'
       @div class: 'blocl', =>
         @label "Server Port:"
-        @subview 'miniport', new EditorView(mini: true, placeholderText: atom.config.get('collaborative-edit.Port'))
+        @subview 'miniPort',
+          new EditorView mini: true,
+            placeholderText: atom.config.get('collaborative-edit.Port')
         @div class: 'message', outlet: '_port'
       @div class: 'block', =>
         @label "File Name:"
-        @subview 'minifile', new EditorView(mini: true, placeholderText: currentfile)
+        @subview 'miniFile',
+          new EditorView mini: true, placeholderText: currentfile
         @div class: 'message', outlet: '_name'
 
   initialize: ->
     @on 'core:confirm', => @confirm()
     @on 'core:cancel', => @detach()
 
-    @miniaddress.setTooltip("The ADDRESS to host on, or connect to. Default : #{atom.config.get('collaborative-edit:ServerAddress')}")
-    @miniaddress.preempt 'textInput', (e) =>
+    @miniAddress.setTooltip "The ADDRESS to host on, or connect to. Default "+
+      ": #{atom.config.get('collaborative-edit:ServerAddress')}"
+    @miniAddress.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
-    @miniport.setTooltip("The PORT to host on, or connect to. Default : #{atom.config.get('collaborative-edit:Port')}")
-    @miniport.preempt 'textInput', (e) =>
+    @miniPort.setTooltip "The PORT to host on, or connect to. Default : "+
+      "#{atom.config.get('collaborative-edit:Port')}"
+    @miniPort.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[0-9]/)
 
-    @minifile.preempt 'textInput', (e) =>
+    @miniFile.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
   activate: ->
@@ -75,9 +84,9 @@ class EditConfig extends View
     @detach()
 
   confirm: ->
-    addr = @miniaddress.getText()
-    port = @miniport.getText()
-    file = @minifile.getText()
+    addr = @miniAddress.getText()
+    port = @miniPort.getText()
+    file = @miniFile.getText()
 
     if addr.length isnt 0
       atom.config.set('collaborative-edit.ServerAddress', addr)
@@ -85,16 +94,16 @@ class EditConfig extends View
     if port.length >= 4 and port.length <= 6
       atom.config.set('collaborative-edit.Port', port)
 
-    if currentsession.tohost
+    if CollaborativeEditView.currentSession.toHost
       if file is ""
         file = atom.workspace.getActiveEditor().getTitle()
-      currentsession.server = require './Host/host'
-      currentsession.host()
+      CollaborativeEditView.currentSession.server = new Host()
+      CollaborativeEditView.currentSession.host()
 
     if file is ""
       file = 'untitled'
 
-    startclient file
+    startClient file
 
     @destroy()
 
@@ -102,7 +111,7 @@ module.exports =
 class CollaborativeEditView extends View
   @content: ->
     @div class: 'collaborative-edit overlay from-top', =>
-      @div "The CollaborativeEdit package is Alive! It's ALIVE!", class: "message"
+      @div "The CollaborativeEdit package is Alive! It's ALIVE"
 
   initialize: (serializeState) ->
     atom.workspaceView.command "collaborative-edit:Host", => @Host()
@@ -112,19 +121,21 @@ class CollaborativeEditView extends View
   serialize: ->
 
   destroy: ->
-    shareview?.destroy()
-    currentsession.destroy()
+    shareView?.destroy()
+    @currentSession.destroy()
     @detach()
 
   Host: ->
-    @edit = new EditConfig(atom.workspace.getActiveEditor().getTitle())
-    currentsession.tohost = true
+    @currentSession = new Session()
+    @edit = new EditConfig atom.workspace.getActiveEditor().getTitle()
+    CollaborativeEditView.currentSession.toHost = true
     @edit.show()
     @edit.focus()
 
   Connect: ->
+    @currentSession = new Session()
     @edit = new EditConfig('untitled')
-    currentsession.tohost = false
+    @currentSession.toHost = false
     @edit.show()
     @edit.focus()
 

@@ -3,11 +3,10 @@ CollaborativeEditView = require './collaborative-edit-view'
 class CollaborativeEdit
 
   config:
-    port:
+    Port:
       type: 'integer'
       default: 8080
-      minimum: 8000
-    serverAddress:
+    ServerAddress:
       type: 'string'
       default: '127.0.0.1'
     Debug:

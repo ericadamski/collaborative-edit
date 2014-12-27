@@ -1,7 +1,7 @@
 class Utils
-    isDebug: atom.config.get 'collaborative-edit.Debug'
+  isDebug: atom.config.get 'collaborative-edit.Debug'
 
-    debug: (string) ->
-        console.log string if @isDebug
+  debug: (string) ->
+    console.log string if @isDebug
 
 module.exports = new Utils

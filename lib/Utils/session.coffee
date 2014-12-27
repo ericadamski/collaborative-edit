@@ -1,36 +1,35 @@
-_removeallclients = () ->
+_removeAllClients = ->
   for client in session.clients
     client?.deactivate()
   session.clients = []
 
-session =
-  {
-    clients: []
+class Session
 
-    getclientpanes: ->
-      panes = []
-      for client in session.clients
-        if client.pane?
-          panes.push client.pane
+  clients: []
 
-      return panes
+  getClientPanes: ->
+    panes = []
+    for client in session.clients
+      if client.pane?
+        panes.push client.pane
 
-    opendocument: (done) ->
-      session.clients.push done()
+    return panes
 
-    host: ->
-      session.server?.host()
+  openDocument: (done) ->
+    this.clients.push done()
 
-    destroy: ->
-      _removeallclients()
-      setTimeout session.server?.close, 2000
+  host: ->
+    this.server?.host()
 
-    getallfiles: ->
-      filelist = []
-      for client in session.clients
-        filelist.push client.documentname
-      return filelist.toString()
+  destroy: ->
+    _removeAllClients()
+    setTimeout session.server?.close, 2000
 
-  }
+  getAllFiles: ->
+    fileList = []
+    for client in this.clients
+      fileList.push client.documentName
+    return fileList.toString()
 
-module.exports = session
+
+module.exports = Session
