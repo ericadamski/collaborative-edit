@@ -7,7 +7,8 @@ Host = require './Host/host'
 class ShareView extends View
   @content: (currentSession) ->
     @div class: 'collaborative-edit overlay from-bottom', =>
-      @div "File(s) #{currentSession.getAllFiles()} are being shared", class: 'message'
+      @div "File(s) #{currentSession.getAllFiles()} are being shared",
+        class: 'message'
 
   show: ->
     atom.workspaceView.append(this)
