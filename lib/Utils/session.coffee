@@ -1,8 +1,3 @@
-_removeAllClients = ->
-  for client in session.clients
-    client?.deactivate()
-  session.clients = []
-
 class Session
 
   clients: []
@@ -22,7 +17,8 @@ class Session
     this.server?.host()
 
   destroy: ->
-    _removeAllClients()
+    for client in session.clients
+      client?.deactivate()
     setTimeout session.server?.close, 2000
 
   getAllFiles: ->
