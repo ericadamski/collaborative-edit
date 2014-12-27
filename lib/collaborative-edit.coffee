@@ -1,7 +1,6 @@
 CollaborativeEditView = require './collaborative-edit-view'
 
-module.exports =
-  collaborativeEditView: null
+class CollaborativeEdit
 
   config:
     Port:
@@ -21,3 +20,6 @@ module.exports =
     @collaborativeEditView.destroy()
 
   serialize: ->
+    # do something
+
+module.exports = new CollaborativeEdit

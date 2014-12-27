@@ -34,7 +34,7 @@ wss.on 'connection', (client) ->
 
   client.on 'message', (data) ->
     jsonData = JSON.parse data
-    if jsondata.a is "unsub"
+    if jsonData.a is "unsub"
       id = wss.getClients().indexOf client
       if client.documents?
         for doc in client.documents

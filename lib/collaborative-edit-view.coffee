@@ -4,29 +4,10 @@ Client = allowUnsafeEval -> require './Client/client'
 Session = require './Utils/session'
 Host = require './Host/host'
 
-shareView = undefined #maybe get rid of this? replace with @??
-
-startClient = (documentName) ->
-  if CollaborativeEditView.currentSession.toHost
-    editor = atom.workspace.getActiveEditor()
-    CollaborativeEditView.currentSession.openDocument ->
-      return client().connect documentName, editor
-  else
-    CollaborativeEditView.currentSession.openDocument ->
-      return client().connect documentName
-
-  shareView?.destroy()
-  shareView = new ShareView()
-  shareView.show()
-
-
-getsharedfiles = () ->
-  return CollaborativeEditView.currentSession.getAllFiles()
-
 class ShareView extends View
-  @content: ->
+  @content: (currentSession) ->
     @div class: 'collaborative-edit overlay from-bottom', =>
-      @div "File(s) #{getsharedfiles()} are being shared", class: 'message'
+      @div "File(s) #{currentSession.getAllFiles()} are being shared", class: 'message'
 
   show: ->
     atom.workspaceView.append(this)
@@ -35,7 +16,6 @@ class ShareView extends View
     @detach()
 
 class EditConfig extends View
-
   @content: (currentfile) ->
     @div class: 'collaborative-edit overlay from-top mini', =>
       @h1 "Connection Information"
@@ -57,8 +37,10 @@ class EditConfig extends View
           new EditorView mini: true, placeholderText: currentfile
         @div class: 'message', outlet: '_name'
 
-  initialize: ->
-    @on 'core:confirm', => @confirm()
+  initialize: (fileName, currentSession, onConfim) ->
+    @currentSession = currentSession
+
+    @on 'core:confirm', => @confirm onConfim
     @on 'core:cancel', => @detach()
 
     @miniAddress.setTooltip "The ADDRESS to host on, or connect to. Default "+
@@ -83,7 +65,7 @@ class EditConfig extends View
   destroy: ->
     @detach()
 
-  confirm: ->
+  confirm: (done) ->
     addr = @miniAddress.getText()
     port = @miniPort.getText()
     file = @miniFile.getText()
@@ -94,21 +76,19 @@ class EditConfig extends View
     if port.length >= 4 and port.length <= 6
       atom.config.set('collaborative-edit.Port', port)
 
-    if CollaborativeEditView.currentSession.toHost
+    if @currentSession.toHost
       if file is ""
         file = atom.workspace.getActiveEditor().getTitle()
-      CollaborativeEditView.currentSession.server = new Host()
-      CollaborativeEditView.currentSession.host()
+      @currentSession.server = new Host()
+      @currentSession.host()
 
-    if file is ""
-      file = 'untitled'
+    file = 'untitled' if file is ""
 
-    startClient file
+    done file, @currentSession
 
     @destroy()
 
-module.exports =
-class CollaborativeEditView extends View
+module.exports = class CollaborativeEditView extends View
   @content: ->
     @div class: 'collaborative-edit overlay from-top', =>
       @div "The CollaborativeEdit package is Alive! It's ALIVE"
@@ -121,21 +101,36 @@ class CollaborativeEditView extends View
   serialize: ->
 
   destroy: ->
-    shareView?.destroy()
+    @shareView?.destroy()
     @currentSession.destroy()
     @detach()
 
+  startClient: (documentName, currentSession) ->
+    console.log currentSession
+    if currentSession.toHost
+      editor = atom.workspace.getActiveEditor()
+      currentSession.openDocument ->
+        return Client().connect documentName, editor
+    else
+      currentSession.openDocument ->
+        return Client().connect documentName
+
+    @shareView?.destroy()
+    @shareView = new ShareView currentSession
+    @shareView.show()
+
   Host: ->
     @currentSession = new Session()
-    @edit = new EditConfig atom.workspace.getActiveEditor().getTitle()
-    CollaborativeEditView.currentSession.toHost = true
+    @currentSession.toHost = true
+    @edit = new EditConfig atom.workspace.getActiveEditor().getTitle(),
+      @currentSession, @startClient
     @edit.show()
     @edit.focus()
 
   Connect: ->
     @currentSession = new Session()
-    @edit = new EditConfig('untitled')
     @currentSession.toHost = false
+    @edit = new EditConfig 'untitled', @currentSession, @startClient
     @edit.show()
     @edit.focus()
 
