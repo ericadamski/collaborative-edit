@@ -26,7 +26,7 @@ class EditConfig extends View
           new EditorView mini: true,
             placeholderText: atom.config.get('collaborative-edit.ServerAddress')
         @div class: 'message', outlet: '_address'
-      @div class: 'blocl', =>
+      @div class: 'block', =>
         @label "Server Port:"
         @subview 'miniPort',
           new EditorView mini: true,
@@ -110,7 +110,7 @@ module.exports = class CollaborativeEditView extends View
     console.log currentSession
     if currentSession.toHost
       editor = atom.workspace.getActiveEditor()
-      currentSession.openDocument ->
+      console.log currentSession.openDocument ->
         return Client().connect documentName, editor
     else
       currentSession.openDocument ->
@@ -125,8 +125,8 @@ module.exports = class CollaborativeEditView extends View
     @currentSession.toHost = true
     @edit = new EditConfig atom.workspace.getActiveEditor().getTitle(),
       @currentSession, @startClient
-    @edit.show()
     @edit.focus()
+    @edit.show()
 
   Connect: ->
     @currentSession = new Session()

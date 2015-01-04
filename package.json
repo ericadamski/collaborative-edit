@@ -4,7 +4,9 @@
   "version": "0.2.6",
   "description": "Allow for LAN collaborative editing of specified documents",
   "author": "Eric Adamski <er.adamski@gmail.com>",
-  "contributors": ["James Roose <james.roose@hotmail.com"],
+  "contributors": [
+    "James Roose <james.roose@hotmail.com"
+  ],
   "activationEvents": [
     "collaborative-edit:Host",
     "collaborative-edit:Connect",
@@ -16,14 +18,16 @@
     "atom": ">0.140.0"
   },
   "dependencies": {
-    "share": "0.7.3",
+    "connect": "3.3.2",
+    "derby": "0.6.x",
+    "derby-starter": "^0.2.6",
+    "diff": "x",
     "express": "4.x.x",
-    "ws": "0.4.x",
+    "hat": "x",
+    "jquery": "2.x.x",
+    "less": "x",
     "livedb": "0.4.x",
     "loophole": "~1.x.x",
-    "connect": "3.3.2",
-    "jquery": "2.x.x",
-    "diff": "x",
-    "less": "x"
+    "ws": "0.4.x"
   }
 }

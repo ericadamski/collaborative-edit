@@ -104,7 +104,8 @@ MARKERS = [
 local =
   {
     sendcursorposition: (pos) ->
-      local.send "{\"cursorposition\": #{pos}, \"documentname\": \"#{local.socket.doc}\"}"
+      #@globalcontext.updateMetadataProperty(
+      #  {propertyName: 'cursors', data: {id: @userId, position: pos}})
 
     updateremotecursors: (msg) ->
       if msg.data is ""
@@ -144,7 +145,7 @@ local =
       oldstart = local.buffer.characterIndexForPosition(change.oldRange.start)
       oldend = local.buffer.characterIndexForPosition(change.oldRange.end)
 
-      utils.debug local.remote.doneremoteop()
+      utils.debug local.remote.doneremoteop();
 
       if not local.remote.doneremoteop() and change isnt local.previouschange
         local.previouschange = change
