@@ -1,123 +1,131 @@
 {allowUnsafeEval} = require 'loophole'
-sharejs = (allowUnsafeEval -> require 'share')
-remote = (allowUnsafeEval -> require './remote')
-local = require './local'
 utils = require '../Utils/utils'
+Session = require './session.coffee'
 
-local.setremote remote
 
-_connect = (document_name, current_text_editor) ->
-  port = atom.config.get 'collaborative-edit.Port'
-  addr = atom.config.get 'collaborative-edit.ServerAddress'
-  local.documentname = document_name
 
-  if not current_text_editor?
-    current_text_editor = atom.workspace.open local.documentname
-    intervalid = setInterval(
-      (->
-        if current_text_editor.inspect().state isnt "pending"
-          local.seteditor current_text_editor.inspect().value
-          clearInterval(intervalid)),
-      500
-    )
-  else
-    local.seteditor current_text_editor
-
-  interval = setInterval(
-    ( ->
-      try
-        ws = new WebSocket("ws://#{addr}:#{port}")
-        local.setsocket new WebSocket("ws://#{addr}:#{port}")
-
-        local.getsocket().onopen = () ->
-          ws.send "{\"istaken\": true, \"documentname\": \"#{local.documentname}\"}"
-          this.send "{\"iscursorsocket\": true, \"documentname\": \"#{local.documentname}\"}"
-          this.doc = local.documentname
-
-        share = new sharejs.client.Connection(ws)
-
-        share.debug = atom.config.get 'collaborative-edit.Debug'
-
-        local.setcurrentdocument doc = share.get("Sharing", local.documentname)
-
-        doc.on('after op', (op, localop) ->
-          ## only for remote operations
-          if not localop
-            remoteupdatedocumentcontents op
-        )
-
-        doc.subscribe()
-
-        doc.whenReady( ->
-          utils.debug "Document is ready."
-
-          local.getsocket().onmessage = (msg) ->
-            try
-              if this.readyState is WebSocket.OPEN
-                local.updateremotecursors msg
-            catch error
-              console.log error
-
-          remote.setbuffer local.getbuffer()
-
-          if (not doc.type)
-            havenewfile doc
-          else
-            local.setglobalcontext doc.createContext()
-            local.getbuffer().setTextViaDiff doc.getSnapshot()
-
-          #remote.startSynchronize(local.getGlobalContext())
-
-          setupfilehandlers()
-          local._updatecursorposition()
-
-          clearInterval(interval)
-        )
-      catch error
-        utils.debug error
-    ),
-    1000
-  )
-
-  return { documentname: local.documentname }
+  #
+  # port = atom.config.get 'collaborative-edit.Port'
+  # addr = atom.config.get 'collaborative-edit.ServerAddress'
+  #
+  # interval = setInterval(
+  #   ( ->
+  #     try
+  #       ws = new WebSocket("ws://#{addr}:#{port}")
+  #       local.setsocket new WebSocket("ws://#{addr}:#{port}")
+  #
+  #       local.getsocket().onopen = () ->
+  #         ws.send(
+  #          "{\"istaken\": true, \"documentname\": \"#{local.documentname}\"}")
+  #         this.send(
+  #           "{\"iscursorsocket\": true, \"documentname\": "+
+  #           "\"#{local.documentname}\"}")
+  #         this.doc = local.documentname
+  #
+  #       share = new sharejs.client.Connection(ws)
+  #
+  #       share.debug = atom.config.get 'collaborative-edit.Debug'
+  #
+  #      local.setcurrentdocument doc = share.get("Sharing", local.documentname)
+  #
+  #       doc.on('after op', (op, localop) ->
+  #         ## only for remote operations
+  #         if not localop
+  #           remoteupdatedocumentcontents op
+  #       )
+  #
+  #       doc.subscribe()
+  #
+  #       doc.whenReady( ->
+  #         utils.debug "Document is ready."
+  #
+  #         local.getsocket().onmessage = (msg) ->
+  #           try
+  #             if this.readyState is WebSocket.OPEN
+  #               local.updateremotecursors msg
+  #           catch error
+  #             console.log error
+  #
+  #         remote.setbuffer local.getbuffer()
+  #
+  #         if (not doc.type)
+  #           havenewfile doc
+  #         else
+  #           local.setglobalcontext doc.createContext()
+  #           local.getbuffer().setTextViaDiff doc.getSnapshot()
+  #
+  #         setupfilehandlers()
+  #         local._updatecursorposition()
+  #
+  #         clearInterval(interval)
+  #       )
+  #     catch error
+  #       utils.debug error
+  #   ),
+  #   1000
+  # )
+  #
+  # return { documentname: local.documentname }
 
 class Client
-  connect: (current_document, current_text_editor) ->
-    info = _connect current_document, current_text_editor
-    this.documentname = info.documentname
-    this.pane = getcurrentpane()
-    return this
+  connect: (document_name, current_text_editor) ->
+
+    @local_session = new Session(
+      'local', document_name, current_text_editor)
+
+    @remote_session = new Session(
+      'remote', document_name, current_text_editor)
+
+    doc = @local_session.session.get_document()
+
+    doc.on('after op', (op, localop) ->
+      remote_update_document_contents op unless localop
+    )
+
+    doc.subscribe()
+
+    local = @local_session.session
+
+    try
+      doc.whenReady( ->
+        utils.debug 'Document is ready.'
+
+        if not doc.type?
+          doc.create 'text'
+          text = local.get_buffer().getText()
+          context = this.createContext()
+          context.insert 0, text
+          local.set_context context
+          local.set_document_position(
+            local.get_buffer().characterIndexForPosition(
+              local.get_cursor_position()
+            )
+          )
+          console.log local.get_document_position()
+        else
+          local.set_context doc.createContext()
+
+        setup_file_handlers local
+      )
+    catch error
+      console.error error
 
   deactivate: ->
-    #remote.stopSynchronize()
-    local.updatedestroy()
+    @local_session.session.update_destroy()
 
-havenewfile = (doc) ->
-  doc.create('text')
-  text = local.getbuffer().getText()
-  local.setglobalcontext(doc.createContext())
-  local.getglobalcontext().insert(0, text)
-  local.setdocumentposition(local.getbuffer().characterIndexForPosition(local.getcursorposition()))
+setup_file_handlers = (local) ->
+  local.add_handler(local.get_editor().onDidDestroy(local.destroy))
+  local.add_handler(
+    local.get_editor().onDidChangeCursorPosition((event) ->
+      local.update_cursor_position event))
+  local.get_buffer().on('changed', () ->
+    local.update)
 
-getcurrentpane = ->
-  for pane in atom.workspace.getPanes()
-    for item in pane.getItems()
-      if item.getTitle() is local.documentname
-        return pane
-
-setupfilehandlers = ->
-  local.addhandler(getcurrentpane()?.onDidRemoveItem((event) ->
-    if event.item?.getTitle() is local.documentname
-      local.updatedestroy()
-  ))
-  local.addhandler(local.geteditor().onDidDestroy(local.updatedestroy))
-  local.addhandler(local.geteditor().onDidChangeCursorPosition(local.updatecursorposition))
-  local.getbuffer().on('changed', local.updatetext) # No need to dispose this
-
-remoteupdatedocumentcontents = (op) ->
-  if not remote.isopthesame op, local.getpreviousoperation()
-    remote.handleop op
-  local.setpreviousoperation op
-  remote.updatedoneremoteop false
+remote_update_document_contents = (op) ->
+  if not @remote_session.session.is_op_same(
+    op, @local_session.session.get_previous_operation())
+    @remote_session.session.handle_op op
+  @local_session.session.set_previous_operation op
+  @remote_session.session.update_done_remote_op false
 
 module.exports = () -> return new Client

@@ -11,7 +11,7 @@ class CollaborativeEdit
       default: '127.0.0.1'
     Debug:
       type: 'boolean'
-      default: true
+      default: false
 
   activate: ->
     @collaborativeEditView = new CollaborativeEditView()
@@ -20,6 +20,5 @@ class CollaborativeEdit
     @collaborativeEditView.destroy()
 
   serialize: ->
-    # do something
 
 module.exports = new CollaborativeEdit

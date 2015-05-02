@@ -63,10 +63,8 @@ class EditConfig extends View
   show: ->
     atom.workspaceView.append(this)
 
-  destroy: ->
-    @detach()
-
   confirm: (done) ->
+    console.log 'THis'
     addr = @miniAddress.getText()
     port = @miniPort.getText()
     file = @miniFile.getText()
@@ -87,7 +85,7 @@ class EditConfig extends View
 
     done file, @currentSession
 
-    @destroy()
+    @detach()
 
 module.exports = class CollaborativeEditView extends View
   @content: ->
@@ -110,11 +108,10 @@ module.exports = class CollaborativeEditView extends View
     console.log currentSession
     if currentSession.toHost
       editor = atom.workspace.getActiveEditor()
-      currentSession.openDocument ->
-        return Client().connect documentName, editor
+      console.log editor
+      Client().connect documentName, editor
     else
-      currentSession.openDocument ->
-        return Client().connect documentName
+      Client().connect documentName
 
     @shareView?.destroy()
     @shareView = new ShareView currentSession
@@ -136,4 +133,4 @@ module.exports = class CollaborativeEditView extends View
     @edit.focus()
 
   Disconnect: ->
-    @destroy()
+    @detach()

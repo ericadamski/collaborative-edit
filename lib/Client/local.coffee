@@ -1,10 +1,7 @@
 utils = require '../Utils/utils'
 less = require 'less'
-
-changehandlers = [] ## A list of atom event handlers to dispose on close ##
-cursorposition = [0, 0]
-cursorlist     = []
-usedmarkers    = []
+{allowUnsafeEval} = require 'loophole'
+sharejs = (allowUnsafeEval -> require 'share')
 
 MARKERS = [
     'AliceBlue-marker',
@@ -101,173 +98,216 @@ MARKERS = [
     'YellowGreen-marker'
   ]
 
-local =
-  {
-    sendcursorposition: (pos) ->
-      local.send "{\"cursorposition\": #{pos}, \"documentname\": \"#{local.socket.doc}\"}"
+class LocalSession
+  constructor: (@document_name, current_text_editor) ->
+    @change_handlers = []
+    @cursor_position = [0, 0]
+    @cursors         = []
+    @used_markers    = []
 
-    updateremotecursors: (msg) ->
-      if msg.data is ""
-        return
+    if not current_text_editor?
+      current_text_editor = atom.workspace.open @document_name
+      if current_text_editor.inspect().state isnt "pending"
+        @editor = current_text_editor.inspect().value
+    else
+      @editor = current_text_editor
 
-      data = JSON.parse msg.data
+    @buffer = @editor.buffer
 
-      if typeof data.id is 'string'
-        return
+    try
+      addr = atom.config.get 'collaborative-edit.ServerAddress'
+      port = atom.config.get 'collaborative-edit.Port'
 
-      localcursor = getremotecursorposition data.id
+      @share_instance = new sharejs.client.Connection(
+        new WebSocket("ws://#{addr}:#{port}"))
 
-      if data.position is "close"
-        deletecursor(localcursor)
+      @share_instance.debug = true#atom.config.get 'collaborative-edit.Debug'
+
+      @document = @share_instance.get "Sharing", @document_name
+
+    catch error
+      console.error error
+
+  update_cursor_position: (event) ->
+    console.log event
+    oldposition =
+     @buffer.characterIndexForPosition event.oldBufferPosition
+    newposition =
+     @buffer.characterIndexForPosition event.newBufferPosition
+
+    if ((not event.textChanged) and ( oldposition isnt newposition + 1))
+      utils.debug "Doing Update becuase "+
+        "oldPos is : #{oldposition} and newPos is : #{newposition}"
+
+      if event is undefined
+        @cursor_position = @editor.getCursorBufferPosition()
       else
-        if localcursor is undefined
-          data.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), {type: 'gutter', class: getnewmarker()})
-          data.properties = data.marker.getProperties()
-          cursorlist.push data
-        else
-          localcursor.marker.getMarker().destroy()
-          localcursor.position = data.position
-          localcursor.marker = local.localeditor.decorateMarker(local.buffer.markPosition(local.buffer.positionForCharacterIndex(data.position)), localcursor.properties)
+        @cursor_position = event.newBufferPosition
 
-    _updatecursorposition: (position) ->
-      if position is undefined
-        cursorposition = local.localeditor.getCursorBufferPosition()
-      else
-        cursorposition = position.newBufferPosition
-      local.documentposition = local.buffer.characterIndexForPosition cursorposition
-      local.sendcursorposition local.documentposition
+      @document_position = @buffer.characterIndexForPosition @cursor_position
+    #local.sendcursorposition @document_position
 
-    updatetext: (change) ->
-      newstart = local.buffer.characterIndexForPosition(change.newRange.start)
-      newend = local.buffer.characterIndexForPosition(change.newRange.end)
+  update: (change) ->
+    new_start =
+      @buffer.characterIndexForPosition(change.newRange.start)
+    new_end = @buffer.characterIndexForPosition(change.newRange.end)
 
-      oldstart = local.buffer.characterIndexForPosition(change.oldRange.start)
-      oldend = local.buffer.characterIndexForPosition(change.oldRange.end)
+    old_start =
+      @buffer.characterIndexForPosition(change.oldRange.start)
+    old_end = @buffer.characterIndexForPosition(change.oldRange.end)
 
-      utils.debug local.remote.doneremoteop()
+    if change isnt @previous_change
+      @previous_change = change
+      utils.debug "Updating local text"
+      if change.oldText is ""
+        # just do insert
+        utils.debug "Doing Insert"
+        @context.insert(old_start, change.newText)
+      else if change.newText is ""
+        # just do delete
+        utils.debug "Doing Delete"
+        @context.remove(old_start, change.oldText.length)
+      else if (change.oldText.length > 0 and change.newText.length > 0)
+        # old text is something and new text is something
+        utils.debug "Doing Replace"
+        @context.remove(old_start, change.oldText.length)
+        @context.insert(old_start, change.newText)
 
-      if not local.remote.doneremoteop() and change isnt local.previouschange
-        local.previouschange = change
-        utils.debug "Updating local text"
-        if change.oldText is ""
-          # just do insert
-          utils.debug "Doing Insert"
-          local.globalcontext.insert(oldstart, change.newText)
-        else if change.newText is ""
-          # just do delete
-          utils.debug "Doing Delete"
-          local.globalcontext.remove(oldstart, change.oldText.length)
-        else if (change.oldText.length > 0 and change.newText.length > 0)
-          # old text is something and new text is something
-          utils.debug "Doing Replace"
-          local.globalcontext.remove(oldstart, change.oldText.length)
-          local.globalcontext.insert(oldstart, change.newText)
+    #local._updatecursorposition()
 
-      local.remote.updatedoneremoteop(false)
-      local._updatecursorposition()
-      #remote.updateSynch()
+  destroy: ->
+    for handler in @change_handlers
+      handler?.dispose()
+    for cursor_location in @cursors
+      cursor_location.marker?.getMarker()?.destroy()
+    @document?.destroy()
+    #@socket.close() if local.socket?.readyState is WebSocket.OPEN
 
-    updatecursorposition: (event) ->
-      oldposition = local.buffer.characterIndexForPosition event.oldBufferPosition
-      newposition = local.buffer.characterIndexForPosition event.newBufferPosition
-      if ((not event.textChanged) and ( oldposition isnt newposition + 1))
-        utils.debug "Doing Update becuase oldPos is : #{oldposition} and newPos is : #{newposition}"
-        local._updatecursorposition event
+  set_editor: (editor) ->
+    utils.debug "Setting Editor and Buffer locally."
+    @editor = editor
 
-    updatedestroy: ->
-      for handler in changehandlers
-        handler?.dispose()
-      for cursorlocation in cursorlist
-        cursorlocation.marker?.getMarker()?.destroy()
-      local.currentdocument?.destroy()
-      local.socket.close() if local.socket?.readyState is WebSocket.OPEN
+  get_editor: ->
+    @editor
 
-    send: (string) ->
-      local.socket.send string if local.socket?.readyState is WebSocket.OPEN
+  get_buffer: ->
+    @buffer
 
-    seteditor: (editor) ->
-      utils.debug "Setting Editor and Buffer locally."
-      local.localeditor = editor
-      local.buffer = local.localeditor.buffer
+  set_document: (doc) ->
+    utils.debug "Setting Document : #{doc}"
+    @document = doc
 
-    geteditor: ->
-      return local.localeditor
+  get_document: ->
+    @document
 
-    setcurrentdocument: (doc) ->
-      utils.debug "Setting Document : #{doc}"
-      local.currentdocument = doc
+  set_context: (context) ->
+    utils.debug "Setting local context : #{context}"
+    @context = context
+    @buffer.setTextViaDiff @document.getSnapshot()
 
-    getcurrentdocument: ->
-      return local.currentdocument
+  get_context: ->
+    @context
 
-    getbuffer: ->
-      return local.buffer
+  set_previous_operation: (operation) ->
+    utils.debug "Setting Previous Op : #{operation}"
+    @previous_operation = operation
 
-    setglobalcontext: (context) ->
-      utils.debug "Setting local context : #{context}"
-      local.globalcontext = context
+  get_previous_operation: ->
+    @previous_operation
 
-    getglobalcontext: ->
-      return local.globalcontext
+  get_document_position: ->
+    @document_position
 
-    setpreviousoperation: (operation) ->
-      utils.debug "Setting Previous Op : #{operation}"
-      local.previousoperation = operation
+  set_document_position: (position) ->
+    utils.debug "Setting Doc Position : #{position}"
+    @document_position = position
 
-    getpreviousoperation: ->
-      return local.previousoperation
+  add_handler: (eventhandler) ->
+    @change_handlers.push eventhandler
 
-    getdocumentposition: ->
-      return local.documentposition
+  get_cursor_position: ->
+    @cursor_position
 
-    setdocumentposition: (position) ->
-      utils.debug "Setting Doc Position : #{position}"
-      local.documentposition = position
+  #sendcursorposition: (pos) ->
+  # send "{\"cursorposition\":#{pos}, \"documentname\":\"#{local.socket.doc}\"}"
 
-    setremote: (remotehandler) ->
-      local.remote = remotehandler
-
-    getcursorposition: ->
-      return cursorposition
-
-    addhandler: (eventhandler) ->
-      changehandlers.push eventhandler
-
-    setsocket: (sock) ->
-      local.socket = sock
-
-    getsocket: ->
-      return local.socket
-  }
-
-deletecursor = (localcursor) ->
-  index = cursorlist.indexOf localcursor
-  cursorlist.splice(index, 1)
-  localcursor.marker.getMarker().destroy()
-
-getremotecursorposition = (id) ->
-  for positions in cursorlist
-      if positions.id is id
-        return positions
-  return undefined
-
-checkismarkerused = (marker) ->
-  for markers in usedmarkers
-    if markers is marker
-      return true
-
-  return false
-
-getnewmarker = ->
-  random = Math.floor Math.random() * (MARKERS.length - 1)
-  marker = MARKERS[random]
-
-  while checkismarkerused marker
-    marker = MARKERS[Math.random(0, MARKERS.length - 1)]
-
-  usedmarkers.push marker
-
-  return marker
+  # update_remote_cursors: (msg) ->
+  #   if msg.data is ""
+  #     return
+  #
+  #   data = JSON.parse msg.data
+  #
+  #   if typeof data.id is 'string'
+  #     return
+  #
+  #   localcursor = getremotecursorposition data.id
+  #
+  #   if data.position is "close"
+  #     deletecursor(localcursor)
+  #   else
+  #     if localcursor is undefined
+  #       data.marker = local.localeditor.decorateMarker(
+  #         local.buffer.markPosition(
+  #           local.buffer.positionForCharacterIndex(
+  #             data.position)), {type: 'gutter', class: getnewmarker()})
+  #       data.properties = data.marker.getProperties()
+  #       cursorlist.push data
+  #     else
+  #       localcursor.marker.getMarker().destroy()
+  #       localcursor.position = data.position
+  #       localcursor.marker = local.localeditor.decorateMarker(
+  #         local.buffer.markPosition(
+  #           local.buffer.positionForCharacterIndex(
+  #             data.position)), localcursor.properties)
 
 
-module.exports = local
+  # update_cursor_position: (event) ->
+  #   oldposition =
+  #  local.buffer.characterIndexForPosition event.oldBufferPosition
+  #   newposition =
+  #  local.buffer.characterIndexForPosition event.newBufferPosition
+  #   if ((not event.textChanged) and ( oldposition isnt newposition + 1))
+  #     utils.debug "Doing Update becuase "+
+  #       "oldPos is : #{oldposition} and newPos is : #{newposition}"
+  #     local._updatecursorposition event
+
+  # send: (string) ->
+  #   local.socket.send string if local.socket?.readyState is WebSocket.OPEN
+
+  # setsocket: (sock) ->
+  #   local.socket = sock
+
+  # getsocket: ->
+  #   return local.socket
+
+# deletecursor = (localcursor) ->
+#   index = cursorlist.indexOf localcursor
+#   cursorlist.splice(index, 1)
+#   localcursor.marker.getMarker().destroy()
+
+# getremotecursorposition = (id) ->
+#   for positions in cursorlist
+#     if positions.id is id
+#       return positions
+#   return undefined
+
+# checkismarkerused = (marker) ->
+#   for markers in usedmarkers
+#     if markers is marker
+#       return true
+#
+#   return false
+#
+# getnewmarker = ->
+#   random = Math.floor Math.random() * (MARKERS.length - 1)
+#   marker = MARKERS[random]
+#
+#   while checkismarkerused marker
+#     marker = MARKERS[Math.random(0, MARKERS.length - 1)]
+#
+#   usedmarkers.push marker
+#
+#   return marker
+
+
+module.exports = LocalSession
