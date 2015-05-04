@@ -14,6 +14,3 @@ module.exports = class ClientSession
       when 'local'
         @session = new LocalSession @document_name, current_text_editor
       when 'remote' then @session = new RemoteSession current_text_editor
-
-  get_session_object: ->
-    @session

@@ -2,71 +2,6 @@
 utils = require '../Utils/utils'
 Session = require './session.coffee'
 
-
-
-  #
-  # port = atom.config.get 'collaborative-edit.Port'
-  # addr = atom.config.get 'collaborative-edit.ServerAddress'
-  #
-  # interval = setInterval(
-  #   ( ->
-  #     try
-  #       ws = new WebSocket("ws://#{addr}:#{port}")
-  #       local.setsocket new WebSocket("ws://#{addr}:#{port}")
-  #
-  #       local.getsocket().onopen = () ->
-  #         ws.send(
-  #          "{\"istaken\": true, \"documentname\": \"#{local.documentname}\"}")
-  #         this.send(
-  #           "{\"iscursorsocket\": true, \"documentname\": "+
-  #           "\"#{local.documentname}\"}")
-  #         this.doc = local.documentname
-  #
-  #       share = new sharejs.client.Connection(ws)
-  #
-  #       share.debug = atom.config.get 'collaborative-edit.Debug'
-  #
-  #      local.setcurrentdocument doc = share.get("Sharing", local.documentname)
-  #
-  #       doc.on('after op', (op, localop) ->
-  #         ## only for remote operations
-  #         if not localop
-  #           remoteupdatedocumentcontents op
-  #       )
-  #
-  #       doc.subscribe()
-  #
-  #       doc.whenReady( ->
-  #         utils.debug "Document is ready."
-  #
-  #         local.getsocket().onmessage = (msg) ->
-  #           try
-  #             if this.readyState is WebSocket.OPEN
-  #               local.updateremotecursors msg
-  #           catch error
-  #             console.log error
-  #
-  #         remote.setbuffer local.getbuffer()
-  #
-  #         if (not doc.type)
-  #           havenewfile doc
-  #         else
-  #           local.setglobalcontext doc.createContext()
-  #           local.getbuffer().setTextViaDiff doc.getSnapshot()
-  #
-  #         setupfilehandlers()
-  #         local._updatecursorposition()
-  #
-  #         clearInterval(interval)
-  #       )
-  #     catch error
-  #       utils.debug error
-  #   ),
-  #   1000
-  # )
-  #
-  # return { documentname: local.documentname }
-
 class Client
   connect: (document_name, current_text_editor) ->
 
@@ -79,7 +14,8 @@ class Client
     doc = @local_session.session.get_document()
 
     doc.on('after op', (op, localop) ->
-      remote_update_document_contents op unless localop
+      operation = { 'remote?' : localop, 'op' : op }
+      remote_update_document_contents operation unless localop
     )
 
     doc.subscribe()
@@ -121,11 +57,12 @@ setup_file_handlers = (local) ->
   local.get_buffer().on('changed', () ->
     local.update)
 
-remote_update_document_contents = (op) ->
+remote_update_document_contents = (operation) ->
+  # I want to make an op a structure like op = {remote? : T/F, op: op}
   if not @remote_session.session.is_op_same(
-    op, @local_session.session.get_previous_operation())
-    @remote_session.session.handle_op op
-  @local_session.session.set_previous_operation op
-  @remote_session.session.update_done_remote_op false
+    operation.op, @local_session.session.get_previous_operation())
+    @remote_session.session.handle_op operation.op
+  @local_session.session.set_previous_operation operation
+  @remote_session.session.update_done_remote_op false # ideally take this out.
 
 module.exports = () -> return new Client
