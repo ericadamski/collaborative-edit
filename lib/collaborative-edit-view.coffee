@@ -43,13 +43,13 @@ class EditConfig extends View
     @on 'core:confirm', => @confirm()
     @on 'core:cancel', => @detach()
 
-    @miniAddress.setTooltip "The ADDRESS to host on, or connect to. Default "+
-      ": #{atom.config.get('collaborative-edit:ServerAddress')}"
+    # @miniAddress.setTooltip "The ADDRESS to host on, or connect to. Default "+
+    #   ": #{atom.config.get('collaborative-edit:ServerAddress')}"
     @miniAddress.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
-    @miniPort.setTooltip "The PORT to host on, or connect to. Default : "+
-      "#{atom.config.get('collaborative-edit:Port')}"
+    # @miniPort.setTooltip "The PORT to host on, or connect to. Default : "+
+    #   "#{atom.config.get('collaborative-edit:Port')}"
     @miniPort.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[0-9]/)
 
@@ -100,12 +100,9 @@ module.exports = class CollaborativeEditView extends View
       @div "The CollaborativeEdit package is Alive! It's ALIVE"
 
   initialize: (serializeState) ->
-    atom.views.getView(atom.workspace).command(
-      "collaborative-edit:Host", => @Host())
-    atom.views.getView(atom.workspace).command(
-      "collaborative-edit:Connect", => @Connect())
-    atom.views.getView(atom.workspace).command(
-      "collaborative-edit:Disconnect", => @Disconnect())
+    atom.commands.add "collaborative-edit:Host": @Host(),
+      "collaborative-edit:Connect": @Connect(),
+      "collaborative-edit:Disconnect": @Disconnect()
 
   serialize: ->
 
