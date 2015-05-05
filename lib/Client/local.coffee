@@ -148,6 +148,8 @@ class LocalSession
     #local.sendcursorposition @document_position
 
   update: (change) ->
+    console.log "Updating text"
+    console.log change
     new_start =
       @buffer.characterIndexForPosition(change.newRange.start)
     new_end = @buffer.characterIndexForPosition(change.newRange.end)

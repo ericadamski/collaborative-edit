@@ -1,5 +1,5 @@
 {allowUnsafeEval} = require 'loophole'
-{View, EditorView} = require 'atom'
+{View, TextEditorView} = require 'atom-space-pen-views'
 Client = allowUnsafeEval -> require './Client/client'
 Session = require './Utils/session'
 Host = require './Host/host'
@@ -11,7 +11,7 @@ class ShareView extends View
         class: 'message'
 
   show: ->
-    atom.workspaceView.append(this)
+    atom.workspaceView.append this
 
   destroy: ->
     @detach()
@@ -21,27 +21,26 @@ class EditConfig extends View
     @div class: 'collaborative-edit overlay from-top mini', =>
       @h1 "Connection Information"
       @div class: 'block', =>
-        @label "Server IP Address:"
-        @subview 'miniAddress',
-          new EditorView mini: true,
-            placeholderText: atom.config.get('collaborative-edit.ServerAddress')
-        @div class: 'message', outlet: '_address'
-      @div class: 'blocl', =>
-        @label "Server Port:"
-        @subview 'miniPort',
-          new EditorView mini: true,
-            placeholderText: atom.config.get('collaborative-edit.Port')
-        @div class: 'message', outlet: '_port'
+        @label for: 'miniAddress', "Server IP Address:"
+        @subview 'miniAddress', new TextEditorView mini: true,
+           placeholderText:
+             atom.config.get('collaborative-edit.ServerAddress')
       @div class: 'block', =>
-        @label "File Name:"
+        @label for: 'miniPort', "Server Port:"
+        @subview 'miniPort', new TextEditorView mini: true,
+           placeholderText: atom.config.get('collaborative-edit.ServerPort')
+      @div class: 'block', =>
+        @label for: 'miniFile', "File Name:"
         @subview 'miniFile',
-          new EditorView mini: true, placeholderText: currentfile
-        @div class: 'message', outlet: '_name'
+          new TextEditorView mini: true, placeholderText: currentfile
+      @div class: 'block', =>
+        @button class: 'inline-block btn', click: 'confirm', "Confirm"
+        @button class: 'inline-block btn', click: 'destroy', "Cancel"
 
-  initialize: (fileName, currentSession, onConfim) ->
+  initialize: (fileName, currentSession, @onConfim) ->
     @currentSession = currentSession
 
-    @on 'core:confirm', => @confirm onConfim
+    @on 'core:confirm', => @confirm()
     @on 'core:cancel', => @detach()
 
     @miniAddress.setTooltip "The ADDRESS to host on, or connect to. Default "+
@@ -57,23 +56,31 @@ class EditConfig extends View
     @miniFile.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
-  activate: ->
-    new EditConfig()
+    console.log this
+
+  destroy: ->
+    @detach()
 
   show: ->
-    atom.workspaceView.append(this)
+    atom.workspaceView.append this
 
-  confirm: (done) ->
-    console.log 'THis'
+  detached: ->
+    utils.debug 'Detached Config View.'
+
+  confirm: ->
+    console.log @miniAddress
+
     addr = @miniAddress.getText()
     port = @miniPort.getText()
     file = @miniFile.getText()
+
+    console.log "Address : #{addr}, Port : #{port}, File : #{file}"
 
     if addr.length isnt 0
       atom.config.set('collaborative-edit.ServerAddress', addr)
 
     if port.length >= 4 and port.length <= 6
-      atom.config.set('collaborative-edit.Port', port)
+      atom.config.set('collaborative-edit.ServerPort', port)
 
     if @currentSession.toHost
       if file is ""
@@ -83,7 +90,7 @@ class EditConfig extends View
 
     file = 'untitled' if file is ""
 
-    done file, @currentSession
+    @onConfim file, @currentSession
 
     @detach()
 
@@ -93,9 +100,12 @@ module.exports = class CollaborativeEditView extends View
       @div "The CollaborativeEdit package is Alive! It's ALIVE"
 
   initialize: (serializeState) ->
-    atom.workspaceView.command "collaborative-edit:Host", => @Host()
-    atom.workspaceView.command "collaborative-edit:Connect", => @Connect()
-    atom.workspaceView.command "collaborative-edit:Disconnect", => @Disconnect()
+    atom.views.getView(atom.workspace).command(
+      "collaborative-edit:Host", => @Host())
+    atom.views.getView(atom.workspace).command(
+      "collaborative-edit:Connect", => @Connect())
+    atom.views.getView(atom.workspace).command(
+      "collaborative-edit:Disconnect", => @Disconnect())
 
   serialize: ->
 
@@ -120,7 +130,7 @@ module.exports = class CollaborativeEditView extends View
   Host: ->
     @currentSession = new Session()
     @currentSession.toHost = true
-    @edit = new EditConfig atom.workspace.getActiveEditor().getTitle(),
+    @edit = new EditConfig atom.workspace.getActiveTextEditor().getTitle(),
       @currentSession, @startClient
     @edit.show()
     @edit.focus()

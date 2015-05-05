@@ -22,7 +22,7 @@ OR
 ### Settings
 
 * `ServerAddress` : The address of the document hosting server. (default: 127.0.0.1)
-* `Port` : The port of the document hosting server. (default: 8080)
+* `ServerPort` : The port of the document hosting server. (default: 8080)
 * `Debug` : Prints some extra information to the console. (default: false)
 
 ### Key Bindings

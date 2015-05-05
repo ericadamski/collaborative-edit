@@ -1,25 +1,34 @@
 {
   "name": "collaborative-edit",
-  "main": "./lib/collaborative-edit",
+  "main": "./lib/collaborative-edit.coffee",
   "version": "0.2.6",
   "description": "Allow for LAN collaborative editing of specified documents",
   "author": "Eric Adamski <er.adamski@gmail.com>",
   "contributors": ["James Roose <james.roose@hotmail.com"],
-  "activationEvents": [
-    "collaborative-edit:Host",
-    "collaborative-edit:Connect",
-    "collaborative-edit:Disconnect"
-  ],
-  "repository": "https://github.com/ericadamski/collaborative-edit.git",
-  "license": "MIT",
+  "activationCommands": {
+    "atom-workspace": [
+      "collaborative-edit:Host",
+      "collaborative-edit:Connect",
+      "collaborative-edit:Disconnect"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ericadamski/collaborative-edit.git"
+  },
+  "license": {
+    "type": "MIT",
+    "url": "https://github.com/ericadamski/collaborative-edit/blob/develop/LICENSE.md"
+  },
   "engines": {
-    "atom": ">0.140.0"
+    "atom": ">x.196.x"
   },
   "dependencies": {
-    "share": "0.7.3",
+    "share": "x.7.3",
     "express": "4.x.x",
-    "ws": "0.4.x",
-    "livedb": "0.4.x",
+    "atom-space-pen-views": "^2.0.4",
+    "ws": "x.4.x",
+    "livedb": "x.4.x",
     "loophole": "~1.x.x",
     "connect": "3.3.2",
     "jquery": "2.x.x",

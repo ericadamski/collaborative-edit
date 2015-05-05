@@ -54,8 +54,8 @@ setup_file_handlers = (local) ->
   local.add_handler(
     local.get_editor().onDidChangeCursorPosition((event) ->
       local.update_cursor_position event))
-  local.get_buffer().on('changed', () ->
-    local.update)
+  local.get_buffer().on('changed', (event) ->
+    local.update event)
 
 remote_update_document_contents = (operation) ->
   # I want to make an op a structure like op = {remote? : T/F, op: op}
