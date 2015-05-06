@@ -4,14 +4,22 @@ Session = require './session.coffee'
 
 class Client
   connect: (document_name, current_text_editor) ->
-
     @local_session = new Session(
       'local', document_name, current_text_editor)
 
     @remote_session = new Session(
       'remote', document_name, current_text_editor)
 
-    doc = @local_session.session.get_document()
+    that = this
+
+    @local_session.session.watch '_document', (prop, oldVal, newVal) ->
+      console.log 'Changed'
+      this.unwatch '_document'
+      this._document = newVal
+      that.afterConnect()
+
+  afterConnect: ->
+    doc = @local_session.session._document
 
     doc.on('after op', (op, localop) ->
       operation = { 'remote?' : localop, 'op' : op }

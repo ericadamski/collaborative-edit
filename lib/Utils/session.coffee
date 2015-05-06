@@ -1,10 +1,10 @@
 class Session
-
-  clients: []
+  constructor: ->
+    @clients = []
 
   getClientPanes: ->
     panes = []
-    for client in session.clients
+    for client in @clients
       if client.pane?
         panes.push client.pane
 
@@ -13,17 +13,9 @@ class Session
   openDocument: (done) ->
     this.clients.push done()
 
-  host: ->
-    this.server?.host()
-
-  destroy: ->
-    for client in session.clients
-      client?.deactivate()
-    setTimeout session.server?.close, 2000
-
   getAllFiles: ->
     fileList = []
-    for client in this.clients
+    for client in @clients
       fileList.push client.documentName
     return fileList.toString()
 

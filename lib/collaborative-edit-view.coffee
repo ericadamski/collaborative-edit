@@ -11,7 +11,7 @@ class ShareView extends View
         class: 'message'
 
   show: ->
-    atom.workspaceView.append this
+    atom.workspace.addTopPanel item: this
 
   destroy: ->
     @detach()
@@ -37,44 +37,31 @@ class EditConfig extends View
         @button class: 'inline-block btn', click: 'confirm', "Confirm"
         @button class: 'inline-block btn', click: 'destroy', "Cancel"
 
-  initialize: (fileName, currentSession, @onConfim) ->
+  initialize: (fileName, currentSession, @onConfirm) ->
     @currentSession = currentSession
 
     @on 'core:confirm', => @confirm()
     @on 'core:cancel', => @detach()
 
-    # @miniAddress.setTooltip "The ADDRESS to host on, or connect to. Default "+
-    #   ": #{atom.config.get('collaborative-edit:ServerAddress')}"
     @miniAddress.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
-    # @miniPort.setTooltip "The PORT to host on, or connect to. Default : "+
-    #   "#{atom.config.get('collaborative-edit:Port')}"
     @miniPort.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[0-9]/)
 
     @miniFile.preempt 'textInput', (e) ->
       false unless e.originalEvent.data.match(/[a-zA-Z0-9\-]/)
 
-    console.log this
-
   destroy: ->
     @detach()
 
   show: ->
-    atom.workspaceView.append this
-
-  detached: ->
-    utils.debug 'Detached Config View.'
+    atom.workspace.addTopPanel item: this
 
   confirm: ->
-    console.log @miniAddress
-
     addr = @miniAddress.getText()
     port = @miniPort.getText()
     file = @miniFile.getText()
-
-    console.log "Address : #{addr}, Port : #{port}, File : #{file}"
 
     if addr.length isnt 0
       atom.config.set('collaborative-edit.ServerAddress', addr)
@@ -84,14 +71,12 @@ class EditConfig extends View
 
     if @currentSession.toHost
       if file is ""
-        file = atom.workspace.getActiveEditor().getTitle()
+        file = atom.workspace.getActiveTextEditor().getTitle()
       @currentSession.server = new Host()
-      @currentSession.host()
 
     file = 'untitled' if file is ""
-
-    @onConfim file, @currentSession
-
+    console.log "Address : #{addr}, Port : #{port}, File : #{file}"
+    @onConfirm file, @currentSession
     @detach()
 
 module.exports = class CollaborativeEditView extends View
@@ -100,11 +85,15 @@ module.exports = class CollaborativeEditView extends View
       @div "The CollaborativeEdit package is Alive! It's ALIVE"
 
   initialize: (serializeState) ->
-    atom.commands.add "collaborative-edit:Host": @Host(),
-      "collaborative-edit:Connect": @Connect(),
-      "collaborative-edit:Disconnect": @Disconnect()
+    atom.commands.add 'atom-workspace',
+      'collaborative-edit:Host', => @Host(),
+      'collaborative-edit:Connect', => @Connect(),
+      'collaborative-edit:Disconnect', => @Disconnect()
 
   serialize: ->
+
+  cancelled: ->
+    @hide()
 
   destroy: ->
     @shareView?.destroy()
@@ -112,10 +101,8 @@ module.exports = class CollaborativeEditView extends View
     @detach()
 
   startClient: (documentName, currentSession) ->
-    console.log currentSession
     if currentSession.toHost
-      editor = atom.workspace.getActiveEditor()
-      console.log editor
+      editor = atom.workspace.getActiveTextEditor()
       Client().connect documentName, editor
     else
       Client().connect documentName
