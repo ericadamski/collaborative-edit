@@ -62,15 +62,15 @@ setup_file_handlers = (local) ->
   local.add_handler(
     local.get_editor().onDidChangeCursorPosition((event) ->
       local.update_cursor_position event))
-  local.get_buffer().on('changed', (event) ->
+  local.buffer.on('changed', (event) ->
     local.update event)
 
 remote_update_document_contents = (operation) ->
   # I want to make an op a structure like op = {remote? : T/F, op: op}
-  if not @remote_session.session.is_op_same(
-    operation.op, @local_session.session.get_previous_operation())
-    @remote_session.session.handle_op operation.op
   @local_session.session.set_previous_operation operation
+  if not @remote_session.session.is_op_same(
+    operation.op, @local_session.session.get_previous_operation().op)
+    @remote_session.session.handle_op operation.op
   @remote_session.session.update_done_remote_op false # ideally take this out.
 
 module.exports = () -> return new Client

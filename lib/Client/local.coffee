@@ -174,7 +174,7 @@ class LocalSession
 
     @status = @share_instanse?.state or 'connecting'
     @_document = undefined
-    
+
     if @share_instance.socket.readyState is WebSocket.OPEN
       console.log "Here"
       @status = 'connected'
@@ -201,7 +201,6 @@ class LocalSession
       )
 
   update_cursor_position: (event) ->
-    console.log event
     oldposition =
      @buffer.characterIndexForPosition event.oldBufferPosition
     newposition =
@@ -230,7 +229,7 @@ class LocalSession
       @buffer.characterIndexForPosition(change.oldRange.start)
     old_end = @buffer.characterIndexForPosition(change.oldRange.end)
 
-    if change isnt @previous_change
+    if change isnt @previous_change.remote?
       @previous_change = change
       utils.debug "Updating local text"
       if change.oldText is ""
@@ -266,13 +265,6 @@ class LocalSession
 
   get_buffer: ->
     @buffer
-
-  set_document: (doc) ->
-    utils.debug "Setting Document : #{doc}"
-    @_document = doc
-
-  get_document: ->
-    @_document
 
   set_context: (context) ->
     utils.debug "Setting local context : #{context}"

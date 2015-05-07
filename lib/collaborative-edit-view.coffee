@@ -81,13 +81,15 @@ class EditConfig extends View
 
 module.exports = class CollaborativeEditView extends View
   @content: ->
-    @div class: 'collaborative-edit overlay from-top', =>
-      @div "The CollaborativeEdit package is Alive! It's ALIVE"
+    @div class: 'collaborative-edit overlay from-top'
 
   initialize: (serializeState) ->
+    console.log this
     atom.commands.add 'atom-workspace',
-      'collaborative-edit:Host', => @Host(),
-      'collaborative-edit:Connect', => @Connect(),
+      'collaborative-edit:Host', => @Host()
+    atom.commands.add 'atom-workspace',
+      'collaborative-edit:Connect', => @Connect()
+    atom.commands.add 'atom-workspace',
       'collaborative-edit:Disconnect', => @Disconnect()
 
   serialize: ->
@@ -120,6 +122,7 @@ module.exports = class CollaborativeEditView extends View
     @edit.focus()
 
   Connect: ->
+    console.log this
     @currentSession = new Session()
     @currentSession.toHost = false
     @edit = new EditConfig 'untitled', @currentSession, @startClient
