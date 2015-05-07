@@ -15,7 +15,7 @@
 * `Bug :` #11 - There is a known bug that you cannont have a client and host within the same Atom window
 * If you are getting weird results from running the host and client, reload both windows and try again, this will usually resolve the issue for the time being. I will try and understand why this is happening and fix it as soon as I can
 
-## 0.3.0
+## 0.2.6
 * Added Cursor Colors for connected clients, not including the host
 * `Bug :` #10 - You cannot select all and delete, files will be come out of synch.
 * `Bug :` #12 - You can only run a single client on a single machine
