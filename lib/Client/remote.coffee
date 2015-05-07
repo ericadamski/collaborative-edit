@@ -5,7 +5,8 @@ NO_OP_TIMEOUT = 60*1000 ## If no operations for 60 seconds, sync documents ##
 
 module.exports = class RemoteSession
   constructor: (current_editor)->
-    @buffer = current_editor.getBuffer()
+    @buffer = current_editor?.getBuffer() or
+      atom.workspace.getActiveTextEditor().getBuffer()
     @noop = false
     @opindex = 0
 

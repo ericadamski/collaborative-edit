@@ -154,15 +154,25 @@ class LocalSession
     @cursor_position = [0, 0]
     @cursors         = []
     @used_markers    = []
+    @editor          = undefined
+    @buffer          = undefined
+
+    that = this
 
     if not current_text_editor?
       current_text_editor = atom.workspace.open @document_name
-      if current_text_editor.inspect().state isnt "pending"
-        @editor = current_text_editor.inspect().value
+      workspaceInterval = setInterval(
+        (->
+          if current_text_editor.inspect().state isnt "pending"
+            that.editor = current_text_editor.inspect().value
+            that.buffer = that.editor.buffer
+            clearInterval workspaceInterval
+        ), 250
+      )
     else
       @editor = current_text_editor
 
-    @buffer = @editor.buffer
+    @buffer = @editor?.buffer
 
     addr = atom.config.get 'collaborative-edit.ServerAddress'
     port = atom.config.get 'collaborative-edit.ServerPort'
@@ -181,8 +191,6 @@ class LocalSession
       @share_instance.debug = true#atom.config.get 'collaborative-edit.Debug'
       @_document = @share_instance.get "Sharing", @document_name
     else
-      that = this
-
       socketConnectionInterval = setInterval(
         (->
           if that.share_instance.socket.readyState is WebSocket.OPEN
@@ -229,7 +237,7 @@ class LocalSession
       @buffer.characterIndexForPosition(change.oldRange.start)
     old_end = @buffer.characterIndexForPosition(change.oldRange.end)
 
-    if change isnt @previous_change.remote?
+    if change isnt @previous_change
       @previous_change = change
       utils.debug "Updating local text"
       if change.oldText is ""
