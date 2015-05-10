@@ -160,19 +160,16 @@ class LocalSession
     that = this
 
     if not current_text_editor?
-      current_text_editor = atom.workspace.open @document_name
-      workspaceInterval = setInterval(
-        (->
-          if current_text_editor.inspect().state isnt "pending"
-            that.editor = current_text_editor.inspect().value
-            that.buffer = that.editor.buffer
-            clearInterval workspaceInterval
-        ), 250
-      )
+      toDispose = atom.workspace.onDidOpen (event) ->
+        utils.debug event
+        that.editor = event.item
+        that.buffer = that.editor.getBuffer()
+        event.pane.onDidDestroy that.destroy
+        toDispose.dispose()
+      atom.workspace.open @document_name
     else
       @editor = current_text_editor
-
-    @buffer = @editor?.buffer
+      @buffer = @editor?.buffer
 
     addr = atom.config.get 'collaborative-edit.ServerAddress'
     port = atom.config.get 'collaborative-edit.ServerPort'
@@ -186,7 +183,6 @@ class LocalSession
     @_document = undefined
 
     if @share_instance.socket.readyState is WebSocket.OPEN
-      console.log "Here"
       @status = 'connected'
       @share_instance.debug = true#atom.config.get 'collaborative-edit.Debug'
       @_document = @share_instance.get "Sharing", @document_name
@@ -194,7 +190,6 @@ class LocalSession
       socketConnectionInterval = setInterval(
         (->
           if that.share_instance.socket.readyState is WebSocket.OPEN
-            console.log "Or there"
             that.status = 'connected'
             that.share_instance.debug = true
             #atom.config.get 'collaborative-edit.Debug'
@@ -257,12 +252,12 @@ class LocalSession
     #local._updatecursorposition()
 
   destroy: ->
+    console.log 'Called'
     for handler in @change_handlers
       handler?.dispose()
     for cursor_location in @cursors
       cursor_location.marker?.getMarker()?.destroy()
     @_document?.destroy()
-    #@socket.close() if local.socket?.readyState is WebSocket.OPEN
 
   set_editor: (editor) ->
     utils.debug "Setting Editor and Buffer locally."

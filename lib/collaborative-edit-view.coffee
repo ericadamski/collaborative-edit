@@ -23,12 +23,11 @@ class EditConfig extends View
       @div class: 'block', =>
         @label for: 'miniAddress', "Server IP Address:"
         @subview 'miniAddress', new TextEditorView mini: true,
-           placeholderText:
-             atom.config.get('collaborative-edit.ServerAddress')
+           placeholderText: atom.config.get 'collaborative-edit.ServerAddress'
       @div class: 'block', =>
         @label for: 'miniPort', "Server Port:"
         @subview 'miniPort', new TextEditorView mini: true,
-           placeholderText: atom.config.get('collaborative-edit.ServerPort')
+           placeholderText: atom.config.get 'collaborative-edit.ServerPort'
       @div class: 'block', =>
         @label for: 'miniFile', "File Name:"
         @subview 'miniFile',
@@ -64,10 +63,10 @@ class EditConfig extends View
     file = @miniFile.getText()
 
     if addr.length isnt 0
-      atom.config.set('collaborative-edit.ServerAddress', addr)
+      atom.config.set 'collaborative-edit.ServerAddress', addr
 
     if port.length >= 4 and port.length <= 6
-      atom.config.set('collaborative-edit.ServerPort', port)
+      atom.config.set 'collaborative-edit.ServerPort', port
 
     if @currentSession.toHost
       if file is ""
@@ -122,7 +121,6 @@ module.exports = class CollaborativeEditView extends View
     @edit.focus()
 
   Connect: ->
-    console.log this
     @currentSession = new Session()
     @currentSession.toHost = false
     @edit = new EditConfig 'untitled', @currentSession, @startClient

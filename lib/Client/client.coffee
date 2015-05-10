@@ -7,6 +7,9 @@ class Client
     @local_session = new Session(
       'local', document_name, current_text_editor)
 
+    if not current_text_editor?
+      current_text_editor = @local_session.session.editor
+
     @remote_session = new Session(
       'remote', document_name, current_text_editor)
 
@@ -21,9 +24,11 @@ class Client
   afterConnect: ->
     doc = @local_session.session._document
 
+    that = this
+
     doc.on('after op', (op, localop) ->
       operation = { 'remote?' : localop, 'op' : op }
-      remote_update_document_contents operation unless localop
+      remote_update_document_contents operation, that unless localop
     )
 
     doc.subscribe()
@@ -55,22 +60,25 @@ class Client
       console.error error
 
   deactivate: ->
-    @local_session.session.update_destroy()
+    @local_session.session.destroy()
 
 setup_file_handlers = (local) ->
   local.add_handler(local.get_editor().onDidDestroy(local.destroy))
   local.add_handler(
     local.get_editor().onDidChangeCursorPosition((event) ->
       local.update_cursor_position event))
-  local.buffer.on('changed', (event) ->
-    local.update event)
+  local.buffer.on('changed', (event) ->    local.update event)
 
-remote_update_document_contents = (operation) ->
+remote_update_document_contents = (operation, that) ->
   # I want to make an op a structure like op = {remote? : T/F, op: op}
-  @local_session.session.set_previous_operation operation
-  if not @remote_session.session.is_op_same(
-    operation.op, @local_session.session.get_previous_operation().op)
-    @remote_session.session.handle_op operation.op
-  @remote_session.session.update_done_remote_op false # ideally take this out.
+  #that.local_session.session.set_previous_operation operation
+  remoteHandler = that.remote_session.session
+  localHandler = that.local_session.session
+
+  if not remoteHandler.is_op_same( operation.op,
+    localHandler.get_previous_operation()?.op)
+    remoteHandler.handle_op operation.op
+  #that.remote_session.session.update_done_remote_op false
+  # ideally take this out.
 
 module.exports = () -> return new Client

@@ -7,20 +7,21 @@ module.exports = class RemoteSession
   constructor: (current_editor)->
     @buffer = current_editor?.getBuffer() or
       atom.workspace.getActiveTextEditor().getBuffer()
+    console.log @buffer
     @noop = false
     @opindex = 0
 
-  handle_position_change_op = (position) ->
+  handle_position_change_op: (position) ->
     utils.debug "Editing OpIndex : #{position}"
     @opindex = position
 
-  handle_insert_op = (string) ->
+  handle_insert_op: (string) ->
     @noop = true
     position = @buffer.positionForCharacterIndex @opindex
     @buffer.insert(position, string)
     @opindex += string.length
 
-  handle_delete_op = (todelete) ->
+  handle_delete_op: (todelete) ->
     @noop = true
     from = @buffer.positionForCharacterIndex @opindex
     to = @buffer.positionForCharacterIndex(@opindex + todelete)
@@ -48,26 +49,24 @@ module.exports = class RemoteSession
         return type
 
   handle_op: (operation) ->
-    return [] if is_op_empty operation
+    return [] if @is_op_empty operation
 
     for op in operation
-      type = get_op_type op
+      type = @get_op_type op
 
       switch type
         when 'number'
           # '#' is position eg. op = [1531]
           utils.debug "Position Change."
-          handle_position_change_op op
+          @handle_position_change_op op
         when 'string'
           # str is insert string
           utils.debug "Insert."
-          handle_insert_op op
+          @handle_insert_op op
         when 'position'
           # {d:N} is delete N characters
           utils.debug "Delete."
-          handle_delete_op op.d
-
-    #remote.updateSynch()
+          @handle_delete_op op.d
 
   is_op_empty: (op) ->
     return true if op is undefined
@@ -75,29 +74,29 @@ module.exports = class RemoteSession
     return false
 
   get_op_position: (op) ->
-    return undefined if is_op_empty op
+    return undefined if @is_op_empty op
     if op.length > 1
       return op[0] if op[0] isnt undefined
     return undefined
 
   get_op_data: (op) ->
-    return undefined if is_op_empty op
-    if get_op_position(op) isnt undefined
+    return undefined if @is_op_empty op
+    if @get_op_position op isnt undefined
       return op[1] if op[1] isnt undefined
     else
       return op[0] if op[0] isnt undefined
     return undefined
 
   is_op_same: (current_op, previous_op) ->
-    return true if ( is_op_empty current_op and is_op_empty previous_op )
+    return true if ( @is_op_empty current_op  and @is_op_empty previous_op  )
+    console.log this
+    are_delete_ops = ( @is_delete_op current_op and @is_delete_op previous_op )
 
-    are_delete_ops = ( is_delete_op current_op and is_delete_op previous_op )
+    current_op_data = @get_op_data current_op
+    current_op_position = @get_op_position current_op
 
-    current_op_data = get_op_data current_op
-    current_op_position = get_op_position current_op
-
-    previous_op_data = get_op_data previous_op
-    previous_op_position = get_op_position previous_op
+    previous_op_data = @get_op_data previous_op
+    previous_op_position = @get_op_position previous_op
 
     if not are_delete_ops
       return true if (
@@ -110,7 +109,7 @@ module.exports = class RemoteSession
     return false
 
   is_delete_op: (op) ->
-    return false if is_op_empty op
+    return false if @is_op_empty op
 
     if op.length is 1
       if op[0] isnt undefined
@@ -122,7 +121,7 @@ module.exports = class RemoteSession
     return false
 
   get_delete_op_length: (op) ->
-    if is_delete_op op
+    if @is_delete_op op
       if op.length is 1
         return op[0].d
       else
