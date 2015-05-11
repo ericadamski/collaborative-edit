@@ -212,27 +212,25 @@ class LocalSession
     if ((not event.textChanged) and ( oldposition isnt newposition + 1))
       utils.debug "Doing Update becuase "+
         "oldPos is : #{oldposition} and newPos is : #{newposition}"
-
       if event is undefined
         @cursor_position = @editor.getCursorBufferPosition()
       else
         @cursor_position = event.newBufferPosition
 
       @document_position = @buffer.characterIndexForPosition @cursor_position
-    #local.sendcursorposition @_document_position
 
   update: (change) ->
     console.log "Updating text"
-    console.log change
-    new_start =
-      @buffer.characterIndexForPosition(change.newRange.start)
-    new_end = @buffer.characterIndexForPosition(change.newRange.end)
-
+    # console.log change
+    # new_start =
+    #   @buffer.characterIndexForPosition(change.newRange.start)
+    # new_end = @buffer.characterIndexForPosition(change.newRange.end)
+    #
     old_start =
       @buffer.characterIndexForPosition(change.oldRange.start)
-    old_end = @buffer.characterIndexForPosition(change.oldRange.end)
-
-    if change isnt @previous_change
+    # old_end = @buffer.characterIndexForPosition(change.oldRange.end)
+    console.log this
+    if change isnt @previous_change and not @previous_operation?.remote
       @previous_change = change
       utils.debug "Updating local text"
       if change.oldText is ""
@@ -248,8 +246,7 @@ class LocalSession
         utils.debug "Doing Replace"
         @context.remove(old_start, change.oldText.length)
         @context.insert(old_start, change.newText)
-
-    #local._updatecursorposition()
+    @previous_operation = { 'remote': false, 'op': undefined }
 
   destroy: ->
     console.log 'Called'
@@ -259,23 +256,10 @@ class LocalSession
       cursor_location.marker?.getMarker()?.destroy()
     @_document?.destroy()
 
-  set_editor: (editor) ->
-    utils.debug "Setting Editor and Buffer locally."
-    @editor = editor
-
-  get_editor: ->
-    @editor
-
-  get_buffer: ->
-    @buffer
-
   set_context: (context) ->
     utils.debug "Setting local context : #{context}"
     @context = context
     @buffer.setTextViaDiff @_document.getSnapshot()
-
-  get_context: ->
-    @context
 
   set_previous_operation: (operation) ->
     utils.debug "Setting Previous Op : #{operation}"

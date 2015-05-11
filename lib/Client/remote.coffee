@@ -7,7 +7,6 @@ module.exports = class RemoteSession
   constructor: (current_editor)->
     @buffer = current_editor?.getBuffer() or
       atom.workspace.getActiveTextEditor().getBuffer()
-    console.log @buffer
     @noop = false
     @opindex = 0
 
@@ -89,7 +88,6 @@ module.exports = class RemoteSession
 
   is_op_same: (current_op, previous_op) ->
     return true if ( @is_op_empty current_op  and @is_op_empty previous_op  )
-    console.log this
     are_delete_ops = ( @is_delete_op current_op and @is_delete_op previous_op )
 
     current_op_data = @get_op_data current_op
