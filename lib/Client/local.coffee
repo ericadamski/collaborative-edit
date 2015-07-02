@@ -259,7 +259,11 @@ class LocalSession
   set_context: (context) ->
     utils.debug "Setting local context : #{context}"
     @context = context
-    @buffer.setTextViaDiff @_document.getSnapshot()
+    try
+      @buffer.setTextViaDiff @_document.getSnapshot()
+    catch error
+      console.error error
+      console.trace
 
   set_previous_operation: (operation) ->
     utils.debug "Setting Previous Op : #{operation}"

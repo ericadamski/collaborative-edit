@@ -59,6 +59,7 @@ class Client
       )
     catch error
       console.error error
+      console.trace
 
   deactivate: ->
     @local_session.session.destroy()
@@ -68,20 +69,13 @@ setup_file_handlers = (local) ->
   local.add_handler(
     local.editor.onDidChangeCursorPosition((event) ->
       local.update_cursor_position event))
-  local.buffer.on('changed', (event) -> local.update event)
+  local.buffer.onDidChange (event) ->
+    local.update event
 
 remote_update_document_contents = (operation, that) ->
-  # I want to make an op a structure like op = {remote : T/F, op: op}
-  #that.local_session.session.set_previous_operation operation
-
-  remoteHandler = that.remote_session.session
-  localHandler = that.local_session.session
-
   # if not remoteHandler.is_op_same( operation.op,
   #   localHandler.get_previous_operation()?.op)
-  remoteHandler.handle_op operation.op
-  #that.remote_session.session.update_done_remote_op false
-  localHandler.set_previous_operation operation
-  # ideally take this out.
+  that.remote_session.session.handle_op operation.op
+  that.local_session.session.set_previous_operation operation
 
 module.exports = () -> return new Client
