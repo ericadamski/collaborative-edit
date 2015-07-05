@@ -1,9 +1,8 @@
-utils = require '../Utils/utils'
+Utils = require '../Utils/Utils'
 less = require 'less'
 {allowUnsafeEval} = require 'loophole'
 sharejs = (allowUnsafeEval -> require 'share').client
 
-#
 # object.watch polyfill
 #
 # 2012-04-03
@@ -161,7 +160,7 @@ class LocalSession
 
     if not current_text_editor?
       toDispose = atom.workspace.onDidOpen (event) ->
-        utils.debug event
+        Utils.debug event
         that.editor = event.item
         that.buffer = that.editor.getBuffer()
         event.pane.onDidDestroy that.destroy
@@ -184,15 +183,15 @@ class LocalSession
 
     if @share_instance.socket.readyState is WebSocket.OPEN
       @status = 'connected'
-      @share_instance.debug = true#atom.config.get 'collaborative-edit.Debug'
+      @share_instance.debug = atom.config.get 'collaborative-edit.Debug'
       @_document = @share_instance.get "Sharing", @document_name
     else
       socketConnectionInterval = setInterval(
         (->
           if that.share_instance.socket.readyState is WebSocket.OPEN
             that.status = 'connected'
-            that.share_instance.debug = true
-            #atom.config.get 'collaborative-edit.Debug'
+            that.share_instance.debug =
+              atom.config.get 'collaborative-edit.Debug'
             that._document = that.share_instance.get("Sharing",
               that.document_name)
             clearInterval socketConnectionInterval
@@ -210,7 +209,7 @@ class LocalSession
      @buffer.characterIndexForPosition event.newBufferPosition
 
     if ((not event.textChanged) and ( oldposition isnt newposition + 1))
-      utils.debug "Doing Update becuase "+
+      Utils.debug "Doing Update becuase "+
         "oldPos is : #{oldposition} and newPos is : #{newposition}"
       if event is undefined
         @cursor_position = @editor.getCursorBufferPosition()
@@ -221,32 +220,28 @@ class LocalSession
 
   update: (change) ->
     console.log "Updating text"
-    # console.log change
-    # new_start =
-    #   @buffer.characterIndexForPosition(change.newRange.start)
-    # new_end = @buffer.characterIndexForPosition(change.newRange.end)
-    #
     old_start =
       @buffer.characterIndexForPosition(change.oldRange.start)
-    # old_end = @buffer.characterIndexForPosition(change.oldRange.end)
-    console.log this
     if change isnt @previous_change and not @previous_operation?.remote
       @previous_change = change
-      utils.debug "Updating local text"
+      Utils.debug "Updating local text"
       if change.oldText is ""
         # just do insert
-        utils.debug "Doing Insert"
+        Utils.debug "Doing Insert"
         @context.insert(old_start, change.newText)
       else if change.newText is ""
         # just do delete
-        utils.debug "Doing Delete"
+        Utils.debug "Doing Delete"
         @context.remove(old_start, change.oldText.length)
       else if (change.oldText.length > 0 and change.newText.length > 0)
         # old text is something and new text is something
-        utils.debug "Doing Replace"
+        Utils.debug "Doing Replace"
         @context.remove(old_start, change.oldText.length)
         @context.insert(old_start, change.newText)
-    @previous_operation = { 'remote': false, 'op': undefined }
+    @previous_operation = {
+      'remote' : false,
+      'op' : undefined,
+      'time_stamp' : Utils.now() }
 
   destroy: ->
     console.log 'Called'
@@ -257,7 +252,7 @@ class LocalSession
     @_document?.destroy()
 
   set_context: (context) ->
-    utils.debug "Setting local context : #{context}"
+    Utils.debug "Setting local context : #{context}"
     @context = context
     try
       @buffer.setTextViaDiff @_document.getSnapshot()
@@ -266,8 +261,9 @@ class LocalSession
       console.trace
 
   set_previous_operation: (operation) ->
-    utils.debug "Setting Previous Op : #{operation}"
+    Utils.debug "Setting Previous Op : #{operation}"
     @previous_operation = operation
+    console.log operation
 
   get_previous_operation: ->
     @previous_operation
@@ -276,7 +272,7 @@ class LocalSession
     @document_position
 
   set_document_position: (position) ->
-    utils.debug "Setting Doc Position : #{position}"
+    Utils.debug "Setting Doc Position : #{position}"
     @document_position = position
 
   add_handler: (eventhandler) ->

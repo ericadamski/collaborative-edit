@@ -50,6 +50,8 @@ module.exports = class RemoteSession
   handle_op: (operation) ->
     return [] if @is_op_empty operation
 
+    console.log operation
+
     for op in operation
       type = @get_op_type op
 
@@ -66,6 +68,9 @@ module.exports = class RemoteSession
           # {d:N} is delete N characters
           utils.debug "Delete."
           @handle_delete_op op.d
+
+    console.log "Done operation"
+    console.log this
 
   is_op_empty: (op) ->
     return true if op is undefined

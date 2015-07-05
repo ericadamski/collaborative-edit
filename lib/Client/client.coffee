@@ -1,6 +1,7 @@
 {allowUnsafeEval} = require 'loophole'
-utils = require '../Utils/utils'
+Utils = require '../Utils/utils'
 Session = require './session.coffee'
+Synchronizer = require '../Utils/synchronizer'
 
 class Client
   connect: (document_name, current_text_editor) ->
@@ -20,16 +21,28 @@ class Client
     @local_session.session.watch '_document', (prop, oldVal, newVal) ->
       this.unwatch '_document'
       @_document = newVal
+      local = this
+      @_document.watch 'version', (prop, oldVal, newVal) ->
+        console.log 'New version.'
+        console.log "Went from #{oldVal} to #{newVal}."
+        that.synchronizer.restart()
+        version = newVal
       that.afterConnect()
 
   afterConnect: ->
     doc = @local_session.session._document
 
+    @synchronizer = new Synchronizer @local_session.session
+
     that = this
 
     doc.on('after op', (op, localop) ->
-      console.log localop
-      operation = { 'remote' : true, 'op' : op }
+      console.log "is remote op." if not localop
+      operation = {
+        'remote' : true,
+        'op' : op,
+        'time_stamp' : Utils.now()
+      }
       remote_update_document_contents operation, that unless localop
     )
 
@@ -39,7 +52,7 @@ class Client
 
     try
       doc.whenReady( ->
-        utils.debug 'Document is ready.'
+        Utils.debug 'Document is ready.'
 
         if not doc.type?
           doc.create 'text'
@@ -59,7 +72,6 @@ class Client
       )
     catch error
       console.error error
-      console.trace
 
   deactivate: ->
     @local_session.session.destroy()
