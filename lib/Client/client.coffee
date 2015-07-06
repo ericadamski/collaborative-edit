@@ -79,7 +79,7 @@ setup_file_handlers = (local) ->
   local.add_handler(
     local.editor.onDidChangeCursorPosition((event) ->
       local.update_cursor_position event))
-  local.buffer.onDidStopChanging (event) ->
+  local.buffer.onDidChange (event) ->
     local.update event
 
 remote_update_document_contents = (operation, that) ->
