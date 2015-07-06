@@ -155,6 +155,8 @@ class LocalSession
     @used_markers    = []
     @editor          = undefined
     @buffer          = undefined
+    @share_instance  = undefined
+    @_document       = undefined
 
     that = this
 
@@ -175,32 +177,22 @@ class LocalSession
 
     console.log "Attempting to connect on ws://#{addr}:#{port}/"
 
-    @share_instance = new sharejs.Connection(
-      new WebSocket("ws://#{addr}:#{port}"))
-
-    @status = @share_instanse?.state or 'connecting'
-    @_document = undefined
-
-    if @share_instance.socket.readyState is WebSocket.OPEN
-      @status = 'connected'
-      @share_instance.debug = atom.config.get 'collaborative-edit.Debug'
-      @_document = @share_instance.get "Sharing", @document_name
-    else
-      socketConnectionInterval = setInterval(
-        (->
-          if that.share_instance.socket.readyState is WebSocket.OPEN
-            that.status = 'connected'
-            that.share_instance.debug =
-              atom.config.get 'collaborative-edit.Debug'
-            that._document = that.share_instance.get("Sharing",
-              that.document_name)
-            clearInterval socketConnectionInterval
-          else
-            that.share_instance = new sharejs.Connection(
-              new WebSocket("ws://#{addr}:#{port}"))
-        ),
-        1500
-      )
+    socketConnectionInterval = setInterval(
+      (->
+        if that.share_instance?.socket?.readyState is WebSocket.OPEN
+          that.status = 'connected'
+          that.share_instance.debug =
+            atom.config.get 'collaborative-edit.Debug'
+          that._document = that.share_instance.get "Sharing",
+            that.document_name
+          clearInterval socketConnectionInterval
+          that.unwatch 'share_instance'
+        else
+          that.share_instance = new sharejs.Connection(
+            new WebSocket("ws://#{addr}:#{port}"))
+      ),
+      1500
+    )
 
   update_cursor_position: (event) ->
     oldposition =
