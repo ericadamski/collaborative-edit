@@ -30,16 +30,6 @@ class Client
 
     that = this
 
-    doc.on('after op', (op, localop) ->
-      console.log "is remote op." if not localop
-      operation = {
-        'remote' : true,
-        'op' : op,
-        'time_stamp' : Utils.now()
-      }
-      remote_update_document_contents(operation, that) unless localop
-    )
-
     local = @local_session.session
 
     doc.subscribe (error) ->
@@ -65,6 +55,20 @@ class Client
           setup_file_handlers local
       else
         console.error error
+
+    doc.on('after op', (op, localop) ->
+      console.log "is remote op." if not localop
+      operation = {
+        'remote' : true,
+        'op' : op,
+        'time_stamp' : Utils.now()
+      }
+      remote_update_document_contents(operation, that) unless localop
+    )
+
+    doc.watch 'version', (prop, oldVal, newVal) ->
+      console.log "Going from version #{oldVal} to #{newVal}"
+      version = newVal
 
   deactivate: ->
     @local_session.session.destroy()
