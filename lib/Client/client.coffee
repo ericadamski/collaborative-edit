@@ -2,7 +2,7 @@
 Utils = require '../Utils/utils'
 Session = require './session.coffee'
 Synchronizer = require '../Utils/synchronizer'
-
+#
 class Client
   connect: (document_name, current_text_editor) ->
     @local_session = new Session(
@@ -84,7 +84,7 @@ setup_file_handlers = (local) ->
 remote_update_document_contents = (operation, that) ->
   # if not remoteHandler.is_op_same( operation.op,
   #   localHandler.get_previous_operation()?.op)
-  that.remote_session.session.handle_op operation.op
   that.local_session.session.set_previous_operation operation
+  that.remote_session.session.handle_op operation.op
 
 module.exports = () -> return new Client
