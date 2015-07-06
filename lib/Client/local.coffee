@@ -235,7 +235,7 @@ class LocalSession
         # just do delete
         Utils.debug "Doing Delete"
         @context.remove(old_start, change.oldText.length)
-      else if (change.oldText.length > 0 and change.newText.length > 0)
+      else if (change.oldText isnt "" and change.newText isnt "")
         # old text is something and new text is something
         Utils.debug "Doing Replace"
         @context.remove(old_start, change.oldText.length)

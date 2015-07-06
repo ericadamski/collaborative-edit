@@ -21,10 +21,6 @@ class Client
     @local_session.session.watch '_document', (prop, oldVal, newVal) ->
       this.unwatch '_document'
       @_document = newVal
-      @_document.watch 'version', (prop, oldVal, newVal) ->
-        console.log "Changed from version #{oldVal}, to version #{newVal}"
-        console.log this
-        version = newVal
       that.afterConnect()
 
   afterConnect: ->
@@ -65,6 +61,7 @@ class Client
           )
         else
           local.set_context doc.createContext()
+          local.buffer.setTextViaDiff doc.getSnapshot()
 
         setup_file_handlers local
       )
