@@ -21,6 +21,10 @@ class Client
     @local_session.session.watch '_document', (prop, oldVal, newVal) ->
       this.unwatch '_document'
       @_document = newVal
+      @_document.watch 'version', (prop, oldVal, newVal) ->
+        console.log "Changed from version #{oldVal}, to version #{newVal}"
+        console.log this
+        version = newVal
       that.afterConnect()
 
   afterConnect: ->
@@ -75,7 +79,7 @@ setup_file_handlers = (local) ->
   local.add_handler(
     local.editor.onDidChangeCursorPosition((event) ->
       local.update_cursor_position event))
-  local.buffer.onDidChange (event) ->
+  local.buffer.onDidStopChanging (event) ->
     local.update event
 
 remote_update_document_contents = (operation, that) ->
