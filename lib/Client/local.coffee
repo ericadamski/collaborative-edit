@@ -223,9 +223,6 @@ class LocalSession
     console.log "Updating text"
     old_start =
       @buffer.characterIndexForPosition(change.oldRange.start)
-    console.log @previous_change
-    console.log @previous_operation
-    return unless @previous_operation? and @previous_change?
     if change isnt @previous_change? and not @previous_operation?.remote
       @previous_change = change
       Utils.debug "Updating local text"
