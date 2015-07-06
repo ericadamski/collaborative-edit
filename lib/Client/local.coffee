@@ -222,16 +222,18 @@ class LocalSession
       if change.oldText is ""
         # just do insert
         Utils.debug "Doing Insert"
-        @context.insert(old_start, change.newText)
+        @context.insert old_start, change.newText, (error, appliedOp) ->
+          console.log error
+          console.log appliedOp
       else if change.newText is ""
         # just do delete
         Utils.debug "Doing Delete"
-        @context.remove(old_start, change.oldText.length)
+        @context.remove old_start, change.oldText.length
       else if (change.oldText isnt "" and change.newText isnt "")
         # old text is something and new text is something
         Utils.debug "Doing Replace"
-        @context.remove(old_start, change.oldText.length)
-        @context.insert(old_start, change.newText)
+        @context.remove old_start, change.oldText.length
+        @context.insert old_start, change.newText
     @previous_operation = {
       'remote' : false,
       'op' : undefined,

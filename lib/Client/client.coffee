@@ -37,36 +37,34 @@ class Client
         'op' : op,
         'time_stamp' : Utils.now()
       }
-      remote_update_document_contents operation, that unless localop
+      remote_update_document_contents(operation, that) unless localop
     )
-
-    doc.subscribe()
 
     local = @local_session.session
 
-    try
-      doc.whenReady( ->
-        Utils.debug 'Document is ready.'
+    doc.subscribe (error) ->
+      if not error?
+        doc.whenReady ->
+          Utils.debug 'Document is ready.'
 
-        if not doc.type?
-          doc.create 'text'
-          text = local.buffer.getText()
-          context = this.createContext()
-          context.insert 0, text
-          local.set_context context
-          local.set_document_position(
-            local.buffer.characterIndexForPosition(
-              local.get_cursor_position()
+          if not doc.type?
+            doc.create 'text'
+            text = local.buffer.getText()
+            context = doc.createContext()
+            context.insert 0, text
+            local.set_context context
+            local.set_document_position(
+              local.buffer.characterIndexForPosition(
+                local.get_cursor_position()
+              )
             )
-          )
-        else
-          local.set_context doc.createContext()
-          local.buffer.setTextViaDiff doc.getSnapshot()
+          else
+            local.set_context doc.createContext()
+            local.buffer.setTextViaDiff doc.getSnapshot()
 
-        setup_file_handlers local
-      )
-    catch error
-      console.error error
+          setup_file_handlers local
+      else
+        console.error error
 
   deactivate: ->
     @local_session.session.destroy()
