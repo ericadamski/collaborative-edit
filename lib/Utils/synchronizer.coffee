@@ -5,7 +5,7 @@ module.exports = class Synchronizer
     @oneSecond = 1000
 
   start: ->
-    @interval = window.setInterval(@synch, @oneSecond, this)
+    @interval = window.setInterval @synch, @oneSecond, this
 
   synch: (that) ->
     diff = Utils.now() - that.local.previous_operation?.time_stamp

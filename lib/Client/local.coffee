@@ -219,6 +219,7 @@ class LocalSession
       @document_position = @buffer.characterIndexForPosition @cursor_position
 
   update: (change) ->
+    console.log "New text is length : #{change.newText.length}"
     console.log "Updating text"
     old_start =
       @buffer.characterIndexForPosition(change.oldRange.start)
