@@ -1,8 +1,6 @@
 {allowUnsafeEval} = require 'loophole'
 utils   = require '../Utils/utils'
 
-NO_OP_TIMEOUT = 60*1000 ## If no operations for 60 seconds, sync documents ##
-
 module.exports = class RemoteSession
   constructor: (current_editor)->
     @buffer = current_editor?.getBuffer() or
@@ -17,7 +15,7 @@ module.exports = class RemoteSession
   handle_insert_op: (string) ->
     @noop = true
     position = @buffer.positionForCharacterIndex @opindex
-    @buffer.insert(position, string)
+    @buffer.insert position, string
     @opindex += string.length
 
   handle_delete_op: (todelete) ->

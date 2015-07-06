@@ -21,9 +21,6 @@ class Client
     @local_session.session.watch '_document', (prop, oldVal, newVal) ->
       this.unwatch '_document'
       @_document = newVal
-      @_document.watch 'version', (prop, oldVal, newVal) ->
-        #that.synchronizer.restart()
-        version = newVal
       that.afterConnect()
 
   afterConnect: ->
